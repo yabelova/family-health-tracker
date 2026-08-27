@@ -4,7 +4,7 @@ import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.telegram.BotCommand;
 import com.yabelova.healthtracker.telegram.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileMenuScreen;
-import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
+import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,14 +14,13 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-public class StartCommand implements BotCommand {
+public class ProfileMenuCommand implements BotCommand {
 
     private final ProfileMenuScreen profileMenuScreen;
-    private final ProfileSelectionScreen profileSelectionScreen;
 
     @Override
     public Set<String> textKeys() {
-        return Set.of("/start");
+        return Set.of(KeyboardFactory.REPLY_BTN_PROFILE_MENU);
     }
 
     @Override
@@ -31,11 +30,7 @@ public class StartCommand implements BotCommand {
 
     @Override
     public boolean handleText(Update update, User user, ReplySender reply) {
-        if (user.getActiveProfileId() != null) {
-            profileMenuScreen.render(user, reply);
-        } else {
-            profileSelectionScreen.render(user, reply);
-        }
+        profileMenuScreen.render(user, reply);
         return false;
     }
 

@@ -11,12 +11,12 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 
-@Table("t_subjects")
+@Table("t_profiles")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Subject {
+public class Profile {
 
     @Id
     @Nullable

@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -17,7 +19,7 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class User implements Persistable<Long> {
 
     @Id
     private Long id;
@@ -28,12 +30,9 @@ public class User {
     @Column("first_name")
     private String firstName;
 
-    @Column("current_state")
-    private UserState currentState;
-
-    @Column("selected_subject_id")
+    @Transient
     @Nullable
-    private Integer selectedSubjectId;
+    private Integer activeProfileId;
 
     @Column("notification_time")
     @Nullable
@@ -42,4 +41,18 @@ public class User {
     @Column("created_at")
     @Nullable
     private Instant createdAt;
+
+    @Transient
+    @Builder.Default
+    private boolean isNewEntry = false;
+
+    @Override
+    public Long getId() {
+        return this.id;
+    }
+
+    @Override
+    public boolean isNew() {
+        return this.isNewEntry;
+    }
 }

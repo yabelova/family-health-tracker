@@ -1,5 +1,6 @@
 package com.yabelova.healthtracker.config;
 
+import com.yabelova.healthtracker.telegram.BotDispatcher;
 import com.yabelova.healthtracker.telegram.HealthTrackerBot;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,9 +12,15 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 public class TelegramBotInitializer {
 
     @Bean
-    public TelegramBotsApi telegramBotsApi(HealthTrackerBot healthTrackerBot) throws TelegramApiException {
-        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-        botsApi.registerBot(healthTrackerBot);
-        return botsApi;
+    public TelegramBotsApi telegramBotsApi() throws TelegramApiException {
+        return new TelegramBotsApi(DefaultBotSession.class);
+    }
+
+    @Bean
+    public HealthTrackerBot healthTrackerBot(TelegramBotConfig botConfig, BotDispatcher dispatcher,
+                                             TelegramBotsApi botsApi) throws TelegramApiException {
+        HealthTrackerBot bot = new HealthTrackerBot(botConfig, dispatcher);
+        botsApi.registerBot(bot);
+        return bot;
     }
 }
