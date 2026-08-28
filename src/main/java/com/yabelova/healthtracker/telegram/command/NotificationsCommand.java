@@ -37,13 +37,13 @@ public class NotificationsCommand implements BotCommand {
     }
 
     @Override
-    public boolean handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user, ReplySender reply) {
         notificationsScreen.render(user, reply);
-        return false;
+        return null;
     }
 
     @Override
-    public boolean handlePendingText(Update update, User user, ReplySender reply) {
+    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
         String raw = update.getMessage().getText().trim();
 
         try {
@@ -51,19 +51,19 @@ public class NotificationsCommand implements BotCommand {
             log.info("Установлено время уведомлений для [{}]: {}", user.getId(), time);
 
             notificationsScreen.render(user, reply);
-            return false;
+            return null;
 
         } catch (DateTimeParseException e) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
                     .text("⚠️ Неверный формат! Введите время в формате Ч:ММ (например, 8:30 или 08:30):")
                     .build());
-            return true; // продолжаем ждать корректный ввод
+            return marker; // продолжаем ждать корректный ввод
         }
     }
 
     @Override
-    public boolean handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user, ReplySender reply) {
         CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
         reply.send(AnswerCallbackQuery.builder()
                 .callbackQueryId(update.getCallbackQuery().getId())
@@ -74,14 +74,14 @@ public class NotificationsCommand implements BotCommand {
                     .chatId(user.getId().toString())
                     .text("Введите время для ежедневных уведомлений в формате Ч:ММ (например, 8:30 или 08:30):")
                     .build());
-            return true; // ожидаем ввод времени
+            return CallbackAction.NOTIFICATION_EDIT.prefix(); // ожидаем ввод времени
 
         } else if (action == CallbackAction.NOTIFICATION_DISABLE) {
             notificationService.disable(user);
             notificationsScreen.render(user, reply);
-            return false;
+            return null;
         }
 
-        return false;
+        return null;
     }
 }

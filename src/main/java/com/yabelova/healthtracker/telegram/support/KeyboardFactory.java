@@ -28,19 +28,29 @@ public class KeyboardFactory {
 
     // Экран «Выбор профиля»
     public static final String INLINE_BTN_CREATE_PROFILE = "➕ Создать новый профиль";
-
-    // Экран «Уведомления»
-    public static final String INLINE_BTN_NOTIFICATION_EDIT = "✏️ Изменить время";
-    public static final String INLINE_BTN_NOTIFICATION_SET = "⏰ Ввести время";
-    public static final String INLINE_BTN_NOTIFICATION_DISABLE = "🚫 Выключить уведомления";
+    public static final String INLINE_BTN_ADD_BY_CODE = "➕ Добавить по коду";
 
     // Экран «Меню профиля» (действия)
     public static final String INLINE_BTN_MENU_TAKE = "💊 Принять лекарство";
     public static final String INLINE_BTN_MENU_PLAN = "📋 План лечения";
     public static final String INLINE_BTN_MENU_SYMPTOM = "📝 Записать симптом";
 
+    // Экран «Меню профиля» (переход к управлению, только владелец)
+    public static final String INLINE_BTN_MENU_MANAGE = "⚙️ Управление профилем";
+
+    // Экран «Управление профилем» (только владелец)
+    public static final String INLINE_BTN_MENU_SHARE = "🔗 Поделиться профилем";
+    public static final String INLINE_BTN_MENU_RENAME = "✏️ Переименовать профиль";
+    public static final String INLINE_BTN_MENU_REVOKE = "🚫 Отменить доступ";
+    public static final String INLINE_BTN_MENU_DELETE = "🗑 Удалить профиль";
+
+    // Экран «Уведомления»
+    public static final String INLINE_BTN_NOTIFICATION_EDIT = "✏️ Изменить время";
+    public static final String INLINE_BTN_NOTIFICATION_SET = "⏰ Ввести время";
+    public static final String INLINE_BTN_NOTIFICATION_DISABLE = "🚫 Выключить уведомления";
+
     /**
-     * Reply-панель показывается в зависимости от того, выбран ли профиль.
+     * Reply-панель показывается в зависимости от того, выбран ли профиль
      */
     public ReplyKeyboardMarkup navigation(boolean profileSelected) {
         List<KeyboardRow> rows = new ArrayList<>();
@@ -63,20 +73,40 @@ public class KeyboardFactory {
     }
 
     /**
-     * Контекстное меню профиля (действия по выбранному профилю).
+     * Контекстное меню профиля (действия по выбранному профилю)
+     * Владельцу добавляется переход к экрану управления
      */
-    public InlineKeyboardMarkup profileMenu() {
+    public InlineKeyboardMarkup profileMenu(boolean isOwner) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
         rows.add(List.of(inlineButton(INLINE_BTN_MENU_TAKE, CallbackAction.MAIN_MENU_ACTION.prefix())));
         rows.add(List.of(inlineButton(INLINE_BTN_MENU_PLAN, CallbackAction.MAIN_MENU_ACTION.prefix())));
         rows.add(List.of(inlineButton(INLINE_BTN_MENU_SYMPTOM, CallbackAction.MAIN_MENU_ACTION.prefix())));
 
+        if (isOwner) {
+            rows.add(List.of(inlineButton(INLINE_BTN_MENU_MANAGE, CallbackAction.PROFILE_MANAGE.prefix())));
+        }
+
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
     /**
-     * Меню выбора профиля: список профилей + создание нового.
+     * Экран «Управление профилем»: только для владельца
+     * Навигация — reply-кнопкой меню профиля
+     */
+    public InlineKeyboardMarkup manageMenu() {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(inlineButton(INLINE_BTN_MENU_SHARE, CallbackAction.PROFILE_SHARE.prefix())));
+        rows.add(List.of(inlineButton(INLINE_BTN_MENU_RENAME, CallbackAction.PROFILE_RENAME.prefix())));
+        rows.add(List.of(inlineButton(INLINE_BTN_MENU_REVOKE, CallbackAction.PROFILE_REVOKE.prefix())));
+        rows.add(List.of(inlineButton(INLINE_BTN_MENU_DELETE, CallbackAction.PROFILE_DELETE.prefix())));
+
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Меню выбора профиля: список профилей + создание нового + добавление по коду
      */
     public InlineKeyboardMarkup profileSelection(List<Profile> profiles, Integer activeProfileId) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -90,12 +120,13 @@ public class KeyboardFactory {
         }
 
         rows.add(List.of(inlineButton(INLINE_BTN_CREATE_PROFILE, CallbackAction.CREATE_PROFILE.prefix())));
+        rows.add(List.of(inlineButton(INLINE_BTN_ADD_BY_CODE, CallbackAction.PROFILE_ADD.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
     /**
-     * Меню уведомлений: ввести/изменить время + выключить.
+     * Меню уведомлений: ввести/изменить время + выключить
      */
     public InlineKeyboardMarkup notifications(boolean hasTime) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();

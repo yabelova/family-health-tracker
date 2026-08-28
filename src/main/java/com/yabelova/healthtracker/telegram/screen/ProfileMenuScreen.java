@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 /**
- * Общий экран «Меню профиля». Вызывается из Start, Select, Create и той же reply-кнопки.
+ * Общий экран «Меню профиля». Вызывается из Start, Select, Create и той же reply-кнопки
  */
 @Component
 @RequiredArgsConstructor
@@ -32,6 +32,8 @@ public class ProfileMenuScreen {
             return;
         }
 
+        boolean isOwner = profileService.isOwner(user, profile.getId());
+
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text("👤 Профиль: " + HtmlUtils.bold(profile.getName()))
@@ -41,8 +43,11 @@ public class ProfileMenuScreen {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Выберите действие:")
-                .replyMarkup(keyboard.profileMenu())
+                .text("Выберите действие:\n\n"
+                        + "• 💊 Принять лекарство — отметить приём сегодня\n"
+                        + "• 📋 План лечения — посмотреть или изменить назначения\n"
+                        + "• 📝 Записать симптом — зафиксировать жалобу")
+                .replyMarkup(keyboard.profileMenu(isOwner))
                 .build());
     }
 }

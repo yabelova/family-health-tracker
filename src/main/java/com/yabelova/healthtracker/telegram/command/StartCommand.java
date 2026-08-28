@@ -2,7 +2,6 @@ package com.yabelova.healthtracker.telegram.command;
 
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.telegram.BotCommand;
-import com.yabelova.healthtracker.telegram.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileMenuScreen;
 import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
@@ -25,27 +24,12 @@ public class StartCommand implements BotCommand {
     }
 
     @Override
-    public Set<CallbackAction> callbackActions() {
-        return Set.of();
-    }
-
-    @Override
-    public boolean handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user, ReplySender reply) {
         if (user.getActiveProfileId() != null) {
             profileMenuScreen.render(user, reply);
         } else {
             profileSelectionScreen.render(user, reply);
         }
-        return false;
-    }
-
-    @Override
-    public boolean handlePendingText(Update update, User user, ReplySender reply) {
-        return false;
-    }
-
-    @Override
-    public boolean handleCallback(Update update, User user, ReplySender reply) {
-        return false;
+        return null;
     }
 }

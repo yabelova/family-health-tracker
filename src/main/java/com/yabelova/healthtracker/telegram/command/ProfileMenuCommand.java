@@ -8,6 +8,7 @@ import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -25,22 +26,21 @@ public class ProfileMenuCommand implements BotCommand {
 
     @Override
     public Set<CallbackAction> callbackActions() {
-        return Set.of();
+        return Set.of(CallbackAction.MAIN_MENU_ACTION);
     }
 
     @Override
-    public boolean handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user, ReplySender reply) {
         profileMenuScreen.render(user, reply);
-        return false;
+        return null;
     }
 
     @Override
-    public boolean handlePendingText(Update update, User user, ReplySender reply) {
-        return false;
-    }
-
-    @Override
-    public boolean handleCallback(Update update, User user, ReplySender reply) {
-        return false;
+    public Object handleCallback(Update update, User user, ReplySender reply) {
+        reply.send(AnswerCallbackQuery.builder()
+                .callbackQueryId(update.getCallbackQuery().getId())
+                .build());
+        profileMenuScreen.render(user, reply);
+        return null;
     }
 }

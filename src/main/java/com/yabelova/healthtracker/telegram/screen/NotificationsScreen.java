@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 /**
- * Общий экран «Уведомления». Доступен всегда (профиль не требуется).
+ * Общий экран «Уведомления». Доступен всегда (профиль не требуется)
  */
 @Component
 @RequiredArgsConstructor
@@ -31,7 +31,9 @@ public class NotificationsScreen {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Что хотите сделать?")
+                .text("Что хотите сделать?\n\n"
+                        + "Время вводится в формате Ч:ММ (например, 8:30 или 08:30) — "
+                        + "уведомление будет приходить каждый день в это время.")
                 .replyMarkup(keyboard.notifications(user.getNotificationTime() != null))
                 .build());
     }

@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Маршрутизирует входящие Update к командам. Строит карты по явным ключам команд
- * (тексты/команды и callback-действия), что делает маршрутизацию детерминированной.
+ * (тексты/команды и callback-действия), что делает маршрутизацию детерминированной
  */
 @Component
 @Slf4j
@@ -25,7 +25,7 @@ public class BotDispatcher {
 
     private final Map<String, BotCommand> textCommands = new HashMap<>();
     private final Map<CallbackAction, BotCommand> callbackCommands = new HashMap<>();
-    private final Map<Long, BotCommand> awaitingInput = new HashMap<>();
+    private final Map<Long, AwaitingRequest> awaitingInput = new HashMap<>();
 
     public BotDispatcher(UserService userService,
                          ReplySender reply,
@@ -49,20 +49,24 @@ public class BotDispatcher {
 
         Route route = route(update, user.getId());
         BotCommand active = route.command();
-        boolean waitNext;
 
-        switch (route.kind()) {
-            case CALLBACK -> waitNext = active.handleCallback(update, user, reply);
-            case REPLY -> waitNext = active.handleText(update, user, reply);
-            case PENDING -> waitNext = active.handlePendingText(update, user, reply);
-            case NONE -> {
-                return;
+        Object next = switch (route.kind()) {
+            case CALLBACK -> active.handleCallback(update, user, reply);
+            case REPLY -> active.handleText(update, user, reply);
+            case PENDING -> active.handlePendingText(update, user, reply, route.marker());
+            case NONE -> null;
+        };
+
+        if (route.kind() == RouteKind.CALLBACK) {
+            // удаляем клавиатуру сообщения, с которого пришёл клик — кнопки одноразовые
+            var message = update.getCallbackQuery().getMessage();
+            if (message != null) {
+                reply.removeKeyboard(input.chatId(), message.getMessageId());
             }
-            default -> throw new IllegalStateException("Unexpected route kind: " + route.kind());
         }
 
-        if (waitNext) {
-            awaitingInput.put(input.chatId(), active);
+        if (next != null) {
+            awaitingInput.put(input.chatId(), new AwaitingRequest(active, next));
         } else {
             awaitingInput.remove(input.chatId());
         }
@@ -89,9 +93,9 @@ public class BotDispatcher {
             return Route.reply(textCmd);
         }
 
-        BotCommand pendingCmd = awaitingInput.get(chatId);
-        if (pendingCmd != null) {
-            return Route.pending(pendingCmd);
+        AwaitingRequest pending = awaitingInput.get(chatId);
+        if (pending != null) {
+            return Route.pending(pending.command(), pending.marker());
         }
 
         log.warn("Не обрабатываемая команда [{}] от пользователя [{}]", text, chatId);
@@ -147,22 +151,25 @@ public class BotDispatcher {
         CALLBACK, REPLY, PENDING, NONE
     }
 
-    private record Route(RouteKind kind, BotCommand command) {
+    private record AwaitingRequest(BotCommand command, Object marker) {
+    }
+
+    private record Route(RouteKind kind, BotCommand command, Object marker) {
 
         static Route none() {
-            return new Route(RouteKind.NONE, null);
+            return new Route(RouteKind.NONE, null, null);
         }
 
         static Route callback(BotCommand command) {
-            return new Route(RouteKind.CALLBACK, command);
+            return new Route(RouteKind.CALLBACK, command, null);
         }
 
         static Route reply(BotCommand command) {
-            return new Route(RouteKind.REPLY, command);
+            return new Route(RouteKind.REPLY, command, null);
         }
 
-        static Route pending(BotCommand command) {
-            return new Route(RouteKind.PENDING, command);
+        static Route pending(BotCommand command, Object marker) {
+            return new Route(RouteKind.PENDING, command, marker);
         }
     }
 }

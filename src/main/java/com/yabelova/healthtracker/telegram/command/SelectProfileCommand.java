@@ -34,28 +34,22 @@ public class SelectProfileCommand implements BotCommand {
     }
 
     @Override
-    public boolean handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user, ReplySender reply) {
         profileSelectionScreen.render(user, reply);
-        return false;
+        return null;
     }
 
     @Override
-    public boolean handlePendingText(Update update, User user, ReplySender reply) {
-        return false;
-    }
-
-    @Override
-    public boolean handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user, ReplySender reply) {
         String data = update.getCallbackQuery().getData();
-        Integer profileId = Integer.valueOf(CallbackAction.payloadOf(data));
-
-        profileService.setActiveProfile(user, profileId);
-
         reply.send(AnswerCallbackQuery.builder()
                 .callbackQueryId(update.getCallbackQuery().getId())
                 .build());
 
+        Integer profileId = Integer.valueOf(CallbackAction.payloadOf(data));
+        profileService.setActiveProfile(user, profileId);
+
         profileMenuScreen.render(user, reply);
-        return false;
+        return null;
     }
 }

@@ -6,6 +6,7 @@ import com.yabelova.healthtracker.service.ProfileService;
 import com.yabelova.healthtracker.telegram.BotCommand;
 import com.yabelova.healthtracker.telegram.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileMenuScreen;
+import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,22 +24,12 @@ public class CreateProfileCommand implements BotCommand {
     private final ProfileMenuScreen profileMenuScreen;
 
     @Override
-    public Set<String> textKeys() {
-        return Set.of();
-    }
-
-    @Override
     public Set<CallbackAction> callbackActions() {
         return Set.of(CallbackAction.CREATE_PROFILE);
     }
 
     @Override
-    public boolean handleText(Update update, User user, ReplySender reply) {
-        return false;
-    }
-
-    @Override
-    public boolean handlePendingText(Update update, User user, ReplySender reply) {
+    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
         String name = update.getMessage().getText().trim();
 
         if (name.isEmpty()) {
@@ -46,22 +37,23 @@ public class CreateProfileCommand implements BotCommand {
                     .chatId(user.getId().toString())
                     .text("Имя профиля не может быть пустым. Введите название:")
                     .build());
-            return true; // продолжаем ждать ввод
+            return marker; // продолжаем ждать ввод
         }
 
         Profile saved = profileService.createProfile(user, name);
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Профиль '" + saved.getName() + "' успешно создан и выбран как активный ✅")
+                .text("Профиль " + HtmlUtils.bold(saved.getName()) + " успешно создан и выбран как активный ✅")
+                .parseMode("HTML")
                 .build());
 
         profileMenuScreen.render(user, reply);
-        return false;
+        return null;
     }
 
     @Override
-    public boolean handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user, ReplySender reply) {
         reply.send(AnswerCallbackQuery.builder()
                 .callbackQueryId(update.getCallbackQuery().getId())
                 .build());
@@ -71,6 +63,6 @@ public class CreateProfileCommand implements BotCommand {
                 .text("Введите имя или название нового профиля (например: 'Дочка Аня', 'Мой профиль'):")
                 .build());
 
-        return true; // ожидаем следующий текст (имя)
+        return CallbackAction.CREATE_PROFILE.prefix(); // ожидаем следующий текст (имя)
     }
 }

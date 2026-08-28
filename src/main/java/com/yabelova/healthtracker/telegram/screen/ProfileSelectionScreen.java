@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * Общий экран «Выбор профиля» (доступен всегда). Показывает список профилей
- * пользователя и возможность создать новый.
+ * пользователя и возможность создать новый
  */
 @Component
 @RequiredArgsConstructor
@@ -37,7 +37,9 @@ public class ProfileSelectionScreen {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Ваши профили:")
+                .text("Ваши профили (активный отмечен знаком ✓):\n"
+                        + "Нажмите на профиль, чтобы сделать его активным. Новый профиль можно "
+                        + "создать или добавить по коду-приглашению от родных.")
                 .replyMarkup(keyboard.profileSelection(profiles, user.getActiveProfileId()))
                 .build());
     }

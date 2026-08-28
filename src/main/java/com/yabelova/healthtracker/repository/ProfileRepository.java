@@ -50,4 +50,22 @@ public interface ProfileRepository extends CrudRepository<Profile, Integer> {
                            @Param("profileId") Integer profileId,
                            @Param("role") UserRole role,
                            @Param("isActive") boolean isActive);
+
+    @Query("""
+                SELECT EXISTS(
+                    SELECT 1 FROM tr_user_profile
+                    WHERE user_id = :userId AND profile_id = :profileId AND role = :role
+                )
+            """)
+    boolean isLinkedAs(@Param("userId") Long userId,
+                       @Param("profileId") Integer profileId,
+                       @Param("role") UserRole role);
+
+    @Modifying
+    @Query("""
+                DELETE FROM tr_user_profile
+                WHERE profile_id = :profileId AND user_id != :userId
+            """)
+    void deleteLinksExceptUser(@Param("profileId") Integer profileId,
+                               @Param("userId") Long userId);
 }
