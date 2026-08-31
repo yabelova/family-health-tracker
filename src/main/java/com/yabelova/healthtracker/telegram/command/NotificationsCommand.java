@@ -2,10 +2,9 @@ package com.yabelova.healthtracker.telegram.command;
 
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.service.NotificationService;
-import com.yabelova.healthtracker.telegram.BotCommand;
-import com.yabelova.healthtracker.telegram.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.NotificationsScreen;
-import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,7 @@ public class NotificationsCommand implements BotCommand {
 
     @Override
     public Set<String> textKeys() {
-        return Set.of(KeyboardFactory.REPLY_BTN_NOTIFICATIONS);
+        return Set.of(BotTexts.REPLY_BTN_NOTIFICATIONS);
     }
 
     @Override
@@ -56,7 +55,7 @@ public class NotificationsCommand implements BotCommand {
         } catch (DateTimeParseException e) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("⚠️ Неверный формат! Введите время в формате Ч:ММ (например, 8:30 или 08:30):")
+                    .text(BotTexts.NOTIFICATIONS_INVALID_FORMAT)
                     .build());
             return marker; // продолжаем ждать корректный ввод
         }
@@ -72,9 +71,9 @@ public class NotificationsCommand implements BotCommand {
         if (action == CallbackAction.NOTIFICATION_EDIT) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("Введите время для ежедневных уведомлений в формате Ч:ММ (например, 8:30 или 08:30):")
+                    .text(BotTexts.NOTIFICATIONS_ENTER_TIME)
                     .build());
-            return CallbackAction.NOTIFICATION_EDIT.prefix(); // ожидаем ввод времени
+            return CallbackAction.NOTIFICATION_EDIT; // ожидаем ввод времени
 
         } else if (action == CallbackAction.NOTIFICATION_DISABLE) {
             notificationService.disable(user);

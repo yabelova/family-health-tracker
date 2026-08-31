@@ -3,9 +3,9 @@ package com.yabelova.healthtracker.telegram.command;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.service.ProfileService;
-import com.yabelova.healthtracker.telegram.BotCommand;
-import com.yabelova.healthtracker.telegram.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileMenuScreen;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class CreateProfileCommand implements BotCommand {
         if (name.isEmpty()) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("Имя профиля не может быть пустым. Введите название:")
+                    .text(BotTexts.CREATE_PROFILE_NAME_EMPTY)
                     .build());
             return marker; // продолжаем ждать ввод
         }
@@ -44,7 +44,7 @@ public class CreateProfileCommand implements BotCommand {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Профиль " + HtmlUtils.bold(saved.getName()) + " успешно создан и выбран как активный ✅")
+                .text(BotTexts.CREATE_PROFILE_SUCCESS.formatted(HtmlUtils.bold(saved.getName())))
                 .parseMode("HTML")
                 .build());
 
@@ -60,9 +60,9 @@ public class CreateProfileCommand implements BotCommand {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Введите имя или название нового профиля (например: 'Дочка Аня', 'Мой профиль'):")
+                .text(BotTexts.CREATE_PROFILE_PROMPT)
                 .build());
 
-        return CallbackAction.CREATE_PROFILE.prefix(); // ожидаем следующий текст (имя)
+        return CallbackAction.CREATE_PROFILE; // ожидаем следующий текст (имя)
     }
 }

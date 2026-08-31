@@ -1,7 +1,7 @@
 package com.yabelova.healthtracker.telegram.support;
 
 import com.yabelova.healthtracker.domain.Profile;
-import com.yabelova.healthtracker.telegram.CallbackAction;
+import com.yabelova.healthtracker.repository.ProfileRepository;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -15,56 +15,22 @@ import java.util.List;
 @Component
 public class KeyboardFactory {
 
-    // ===== REPLY-КНОПКИ (нижняя панель ввода) =====
-
-    // Навигация (всегда доступные)
-    public static final String REPLY_BTN_NOTIFICATIONS = "🔔 Уведомления";
-    public static final String REPLY_BTN_SELECT_PROFILE = "👤 Выбор профиля";
-
-    // Навигация (только при выбранном профиле)
-    public static final String REPLY_BTN_PROFILE_MENU = "📋 Меню профиля";
-
-    // ===== INLINE-КНОПКИ =====
-
-    // Экран «Выбор профиля»
-    public static final String INLINE_BTN_CREATE_PROFILE = "➕ Создать новый профиль";
-    public static final String INLINE_BTN_ADD_BY_CODE = "➕ Добавить по коду";
-
-    // Экран «Меню профиля» (действия)
-    public static final String INLINE_BTN_MENU_TAKE = "💊 Принять лекарство";
-    public static final String INLINE_BTN_MENU_PLAN = "📋 План лечения";
-    public static final String INLINE_BTN_MENU_SYMPTOM = "📝 Записать симптом";
-
-    // Экран «Меню профиля» (переход к управлению, только владелец)
-    public static final String INLINE_BTN_MENU_MANAGE = "⚙️ Управление профилем";
-
-    // Экран «Управление профилем» (только владелец)
-    public static final String INLINE_BTN_MENU_SHARE = "🔗 Поделиться профилем";
-    public static final String INLINE_BTN_MENU_RENAME = "✏️ Переименовать профиль";
-    public static final String INLINE_BTN_MENU_REVOKE = "🚫 Отменить доступ";
-    public static final String INLINE_BTN_MENU_DELETE = "🗑 Удалить профиль";
-
-    // Экран «Уведомления»
-    public static final String INLINE_BTN_NOTIFICATION_EDIT = "✏️ Изменить время";
-    public static final String INLINE_BTN_NOTIFICATION_SET = "⏰ Ввести время";
-    public static final String INLINE_BTN_NOTIFICATION_DISABLE = "🚫 Выключить уведомления";
-
     /**
-     * Reply-панель показывается в зависимости от того, выбран ли профиль
+     * Постоянная reply-панель: рисуется один раз на /start и живёт сама.
+     * Кнопки всегда одни и те же, без условий.
      */
-    public ReplyKeyboardMarkup navigation(boolean profileSelected) {
+    public ReplyKeyboardMarkup navigation() {
         List<KeyboardRow> rows = new ArrayList<>();
 
-        if (profileSelected) {
-            KeyboardRow row1 = new KeyboardRow();
-            row1.add(new KeyboardButton(REPLY_BTN_PROFILE_MENU));
-            rows.add(row1);
-        }
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add(new KeyboardButton(BotTexts.REPLY_BTN_PROFILE_MENU));
+        row1.add(new KeyboardButton(BotTexts.REPLY_BTN_SELECT_PROFILE));
+        rows.add(row1);
 
-        KeyboardRow navRow = new KeyboardRow();
-        navRow.add(new KeyboardButton(REPLY_BTN_NOTIFICATIONS));
-        navRow.add(new KeyboardButton(REPLY_BTN_SELECT_PROFILE));
-        rows.add(navRow);
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add(new KeyboardButton(BotTexts.REPLY_BTN_NOTIFICATIONS));
+        row2.add(new KeyboardButton(BotTexts.REPLY_BTN_HELP));
+        rows.add(row2);
 
         return ReplyKeyboardMarkup.builder()
                 .keyboard(rows)
@@ -79,12 +45,12 @@ public class KeyboardFactory {
     public InlineKeyboardMarkup profileMenu(boolean isOwner) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_TAKE, CallbackAction.MAIN_MENU_ACTION.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_PLAN, CallbackAction.MAIN_MENU_ACTION.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_SYMPTOM, CallbackAction.MAIN_MENU_ACTION.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TAKE, CallbackAction.MAIN_MENU_ACTION.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_PLAN, CallbackAction.MAIN_MENU_ACTION.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_SYMPTOM, CallbackAction.MAIN_MENU_ACTION.prefix())));
 
         if (isOwner) {
-            rows.add(List.of(inlineButton(INLINE_BTN_MENU_MANAGE, CallbackAction.PROFILE_MANAGE.prefix())));
+            rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_MANAGE, CallbackAction.PROFILE_MANAGE.prefix())));
         }
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
@@ -97,10 +63,36 @@ public class KeyboardFactory {
     public InlineKeyboardMarkup manageMenu() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_SHARE, CallbackAction.PROFILE_SHARE.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_RENAME, CallbackAction.PROFILE_RENAME.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_REVOKE, CallbackAction.PROFILE_REVOKE.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_MENU_DELETE, CallbackAction.PROFILE_DELETE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_SHARE, CallbackAction.PROFILE_SHARE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_RENAME, CallbackAction.PROFILE_RENAME.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_REVOKE, CallbackAction.PROFILE_REVOKE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TRANSFER, CallbackAction.PROFILE_TRANSFER.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_DELETE, CallbackAction.PROFILE_DELETE.prefix())));
+
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Меню выбора участника для передачи прав: кнопка на каждого участника
+     * (callbackData action:profileId:userId) + опционально «Отозвать доступ»
+     */
+    public InlineKeyboardMarkup transferChoices(List<ProfileRepository.ProfileParticipant> participants,
+                                                CallbackAction action,
+                                                Integer profileId,
+                                                boolean includeRevoke) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (ProfileRepository.ProfileParticipant participant : participants) {
+            rows.add(List.of(inlineButton(
+                    BotTexts.INLINE_BTN_TRANSFER_TO + ParticipantName.of(participant),
+                    action.prefix() + ":" + profileId + ":" + participant.userId())));
+        }
+
+        if (includeRevoke) {
+            rows.add(List.of(inlineButton(
+                    BotTexts.INLINE_BTN_MENU_REVOKE,
+                    CallbackAction.PRIVACY_REVOKE.prefix() + ":" + profileId)));
+        }
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
@@ -114,13 +106,14 @@ public class KeyboardFactory {
         for (Profile profile : profiles) {
             InlineKeyboardButton btn = new InlineKeyboardButton();
             boolean isActive = profile.getId().equals(activeProfileId);
-            btn.setText((isActive ? "✓ " : "") + "👤 " + profile.getName());
+            btn.setText((isActive ? BotTexts.PROFILE_BTN_ACTIVE_PREFIX : "")
+                    + BotTexts.PROFILE_BTN_PREFIX + profile.getName());
             btn.setCallbackData(CallbackAction.ACTIVATE_PROFILE.prefix() + ":" + profile.getId());
             rows.add(List.of(btn));
         }
 
-        rows.add(List.of(inlineButton(INLINE_BTN_CREATE_PROFILE, CallbackAction.CREATE_PROFILE.prefix())));
-        rows.add(List.of(inlineButton(INLINE_BTN_ADD_BY_CODE, CallbackAction.PROFILE_ADD.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_CREATE_PROFILE, CallbackAction.CREATE_PROFILE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_ADD_BY_CODE, CallbackAction.PROFILE_ADD.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
@@ -131,10 +124,14 @@ public class KeyboardFactory {
     public InlineKeyboardMarkup notifications(boolean hasTime) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        String editLabel = hasTime ? INLINE_BTN_NOTIFICATION_EDIT : INLINE_BTN_NOTIFICATION_SET;
+        String editLabel = hasTime
+                ? BotTexts.INLINE_BTN_NOTIFICATION_EDIT
+                : BotTexts.INLINE_BTN_NOTIFICATION_SET;
         rows.add(List.of(inlineButton(editLabel, CallbackAction.NOTIFICATION_EDIT.prefix())));
-        if (hasTime)
-            rows.add(List.of(inlineButton(INLINE_BTN_NOTIFICATION_DISABLE, CallbackAction.NOTIFICATION_DISABLE.prefix())));
+        if (hasTime) {
+            rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_NOTIFICATION_DISABLE,
+                    CallbackAction.NOTIFICATION_DISABLE.prefix())));
+        }
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }

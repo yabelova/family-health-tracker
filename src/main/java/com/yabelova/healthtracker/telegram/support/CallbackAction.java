@@ -1,4 +1,4 @@
-package com.yabelova.healthtracker.telegram;
+package com.yabelova.healthtracker.telegram.support;
 
 public enum CallbackAction {
 
@@ -18,11 +18,19 @@ public enum CallbackAction {
 
     PROFILE_RENAME("profile.rename"),
 
+    PROFILE_TRANSFER("profile.transfer"),
+
+    TRANSFER_OWNERSHIP("transfer.ownership"),
+
     MAIN_MENU_ACTION("menu.main"),
 
     NOTIFICATION_EDIT("notification.edit"),
 
-    NOTIFICATION_DISABLE("notification.disable");
+    NOTIFICATION_DISABLE("notification.disable"),
+
+    PRIVACY_TRANSFER("privacy.transfer"),
+
+    PRIVACY_REVOKE("privacy.revoke");
 
     private final String prefix;
 

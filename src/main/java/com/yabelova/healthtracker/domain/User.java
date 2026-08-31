@@ -1,5 +1,6 @@
 package com.yabelova.healthtracker.domain;
 
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,7 @@ import java.time.LocalTime;
 public class User implements Persistable<Long> {
 
     @Id
+    @Nonnull
     private Long id;
 
     @Nullable
@@ -47,6 +49,7 @@ public class User implements Persistable<Long> {
     private boolean isNewEntry = false;
 
     @Override
+    @Nonnull
     public Long getId() {
         return this.id;
     }

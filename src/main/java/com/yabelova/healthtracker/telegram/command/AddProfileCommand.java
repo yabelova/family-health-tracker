@@ -4,9 +4,9 @@ import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.exception.ProfileOperationException;
 import com.yabelova.healthtracker.service.ProfileService;
-import com.yabelova.healthtracker.telegram.BotCommand;
-import com.yabelova.healthtracker.telegram.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class AddProfileCommand implements BotCommand {
         if (raw == null || raw.trim().isEmpty()) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("Введите код приглашения:")
+                    .text(BotTexts.ADD_CODE_PROMPT)
                     .build());
             return marker;
         }
@@ -46,7 +46,7 @@ public class AddProfileCommand implements BotCommand {
 
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("✅ Профиль " + HtmlUtils.bold(profile.getName()) + " добавлен! Выберите его в списке, чтобы сделать активным")
+                    .text(BotTexts.ADD_PROFILE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())))
                     .parseMode("HTML")
                     .build());
 
@@ -70,9 +70,9 @@ public class AddProfileCommand implements BotCommand {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Введите код приглашения:")
+                .text(BotTexts.ADD_CODE_PROMPT)
                 .build());
 
-        return CallbackAction.PROFILE_ADD.prefix(); // ожидаем следующий текст (код)
+        return CallbackAction.PROFILE_ADD; // ожидаем следующий текст (код)
     }
 }

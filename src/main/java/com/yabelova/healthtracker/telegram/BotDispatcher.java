@@ -2,6 +2,9 @@ package com.yabelova.healthtracker.telegram;
 
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.service.UserService;
+import com.yabelova.healthtracker.telegram.command.BotCommand;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
+import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,18 +47,18 @@ public class BotDispatcher {
 
     public void dispatch(Update update) {
         TelegramInput input = parse(update);
+        if (input == null) {
+            return;
+        }
+        if (input.callback()) {
+            log.info("Обработан callback: chat={} data={}", input.chatId(), input.text());
+        } else {
+            log.info("Обработан текст: chat={} len={} text={}", input.chatId(), input.text().length(), input.text());
+        }
         User user = getOrCreateUser(input);
-        log.info("Пользователь [{}] ввод/клик: [{}]", input.chatId(), input.text());
 
         Route route = route(update, user.getId());
         BotCommand active = route.command();
-
-        Object next = switch (route.kind()) {
-            case CALLBACK -> active.handleCallback(update, user, reply);
-            case REPLY -> active.handleText(update, user, reply);
-            case PENDING -> active.handlePendingText(update, user, reply, route.marker());
-            case NONE -> null;
-        };
 
         if (route.kind() == RouteKind.CALLBACK) {
             // удаляем клавиатуру сообщения, с которого пришёл клик — кнопки одноразовые
@@ -65,8 +68,17 @@ public class BotDispatcher {
             }
         }
 
+        Object next = switch (route.kind()) {
+            case CALLBACK -> active.handleCallback(update, user, reply, route.marker());
+            case REPLY -> active.handleText(update, user, reply);
+            case PENDING -> active.handlePendingText(update, user, reply, route.marker());
+            case NONE -> null;
+        };
+
         if (next != null) {
             awaitingInput.put(input.chatId(), new AwaitingRequest(active, next));
+            log.info("Ожидание ввода: chat={} cmd={} marker={}", input.chatId(),
+                    active.getClass().getSimpleName(), markerLabel(next));
         } else {
             awaitingInput.remove(input.chatId());
         }
@@ -83,7 +95,8 @@ public class BotDispatcher {
                 replyUnexpected(chatId);
                 return Route.none();
             }
-            return Route.callback(callbackCmd);
+            AwaitingRequest pending = awaitingInput.get(chatId);
+            return Route.callback(callbackCmd, pending != null ? pending.marker() : null);
         }
 
         String text = textOf(update);
@@ -98,7 +111,7 @@ public class BotDispatcher {
             return Route.pending(pending.command(), pending.marker());
         }
 
-        log.warn("Не обрабатываемая команда [{}] от пользователя [{}]", text, chatId);
+        log.warn("Не обрабатываемый ввод: chat={} len={}", chatId, text.length());
         replyUnexpected(chatId);
         return Route.none();
     }
@@ -118,7 +131,7 @@ public class BotDispatcher {
     private void replyUnexpected(Long chatId) {
         reply.send(SendMessage.builder()
                 .chatId(chatId.toString())
-                .text("⚠️ Не понимаю эту команду. Воспользуйтесь кнопками меню ниже")
+                .text(BotTexts.COMMON_UNKNOWN_COMMAND)
                 .build());
     }
 
@@ -126,25 +139,34 @@ public class BotDispatcher {
         return update.getMessage().getText() != null ? update.getMessage().getText() : "";
     }
 
+    private String markerLabel(Object marker) {
+        if (marker == null) {
+            return "null";
+        }
+        return marker.getClass().getSimpleName();
+    }
+
     private TelegramInput parse(Update update) {
         if (update.hasCallbackQuery()) {
             var c = update.getCallbackQuery();
-            return new TelegramInput(c.getMessage().getChatId(), c.getData(),
+            return new TelegramInput(c.getMessage().getChatId(), c.getData(), true,
                     c.getFrom().getFirstName(), c.getFrom().getUserName());
         }
         if (update.hasMessage() && update.getMessage().hasText()) {
             var m = update.getMessage();
-            return new TelegramInput(m.getChatId(), m.getText(),
+            return new TelegramInput(m.getChatId(), m.getText(), false,
                     m.getFrom().getFirstName(), m.getFrom().getUserName());
         }
-        throw new IllegalArgumentException("Неподдерживаемый тип сообщения от Telegram");
+        // Стикеры, фото, служебные апдейты (my_chat_member и т.д.) — молча игнорируем
+        return null;
     }
 
     private User getOrCreateUser(TelegramInput input) {
         return userService.getOrCreate(input.chatId(), input.firstName(), input.userName());
     }
 
-    private record TelegramInput(Long chatId, String text, String firstName, String userName) {
+    private record TelegramInput(Long chatId, String text, boolean callback,
+                                 String firstName, String userName) {
     }
 
     private enum RouteKind {
@@ -160,8 +182,8 @@ public class BotDispatcher {
             return new Route(RouteKind.NONE, null, null);
         }
 
-        static Route callback(BotCommand command) {
-            return new Route(RouteKind.CALLBACK, command, null);
+        static Route callback(BotCommand command, Object marker) {
+            return new Route(RouteKind.CALLBACK, command, marker);
         }
 
         static Route reply(BotCommand command) {

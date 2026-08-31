@@ -3,6 +3,7 @@ package com.yabelova.healthtracker.telegram.screen;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.service.ProfileService;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
@@ -26,8 +27,7 @@ public class ProfileMenuScreen {
         if (profile == null) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("⚠️ Профиль не существует. Выберите другой")
-                    .replyMarkup(keyboard.navigation(false))
+                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
                     .build());
             return;
         }
@@ -36,17 +36,8 @@ public class ProfileMenuScreen {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("👤 Профиль: " + HtmlUtils.bold(profile.getName()))
+                .text(BotTexts.PROFILE_MENU_TITLE.formatted(HtmlUtils.bold(profile.getName())))
                 .parseMode("HTML")
-                .replyMarkup(keyboard.navigation(true))
-                .build());
-
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text("Выберите действие:\n\n"
-                        + "• 💊 Принять лекарство — отметить приём сегодня\n"
-                        + "• 📋 План лечения — посмотреть или изменить назначения\n"
-                        + "• 📝 Записать симптом — зафиксировать жалобу")
                 .replyMarkup(keyboard.profileMenu(isOwner))
                 .build());
     }

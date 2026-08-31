@@ -3,12 +3,15 @@ package com.yabelova.healthtracker.telegram.command;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.exception.ProfileOperationException;
+import com.yabelova.healthtracker.repository.ProfileRepository.ProfileParticipant;
 import com.yabelova.healthtracker.service.ProfileService;
-import com.yabelova.healthtracker.telegram.BotCommand;
-import com.yabelova.healthtracker.telegram.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
+import com.yabelova.healthtracker.telegram.support.ConfirmationWords;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParticipantName;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +19,7 @@ import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -33,17 +37,25 @@ public class ProfileManageCommand implements BotCommand {
                 CallbackAction.PROFILE_SHARE,
                 CallbackAction.PROFILE_REVOKE,
                 CallbackAction.PROFILE_DELETE,
-                CallbackAction.PROFILE_RENAME
+                CallbackAction.PROFILE_RENAME,
+                CallbackAction.PROFILE_TRANSFER,
+                CallbackAction.TRANSFER_OWNERSHIP
         );
     }
 
     @Override
     public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
-        CallbackAction flow = marker instanceof String data ? CallbackAction.fromData(data) : null;
-        if (flow == CallbackAction.PROFILE_DELETE) {
-            return handleDeleteConfirmation(update, user, reply, marker);
+        if (marker instanceof TransferChoice choice) {
+            return handleTransferConfirmation(update, user, reply, choice);
         }
-        return handleRename(update, user, reply, marker);
+        if (!(marker instanceof CallbackAction action)) {
+            return null;
+        }
+        return switch (action) {
+            case PROFILE_DELETE -> handleDeleteConfirmation(update, user, reply, marker);
+            case PROFILE_RENAME -> handleRename(update, user, reply, marker);
+            default -> null;
+        };
     }
 
     @Override
@@ -58,7 +70,7 @@ public class ProfileManageCommand implements BotCommand {
         if (profile == null) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("⚠️ Сначала выберите профиль")
+                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
                     .build());
             return null;
         }
@@ -70,47 +82,40 @@ public class ProfileManageCommand implements BotCommand {
                     return null;
                 }
 
-                case PROFILE_SHARE -> {
-                    String code = profileService.createInvite(user, profile.getId());
-                    reply.send(SendMessage.builder()
-                            .chatId(user.getId().toString())
-                            .text("🔗 Код приглашения для профиля " + HtmlUtils.bold(profile.getName()) + ":\n\n"
-                                    + HtmlUtils.bold(code) + "\n\n"
-                                    + "Действует 72 часа и может быть использован один раз. Второй человек вводит его в "
-                                    + "«👤 Выбор профиля» → «➕ Добавить по коду»")
-                            .parseMode("HTML")
-                            .build());
-                    renderManage(user, profile, reply);
-                    return null;
-                }
-
                 case PROFILE_RENAME -> {
                     reply.send(SendMessage.builder()
                             .chatId(user.getId().toString())
-                            .text("Введите новое имя профиля:")
+                            .text(BotTexts.RENAME_PROMPT)
                             .build());
-                    return CallbackAction.PROFILE_RENAME.prefix(); // ожидаем следующий текст (имя)
+                    return CallbackAction.PROFILE_RENAME; // ожидаем следующий текст (имя)
+                }
+
+                case PROFILE_SHARE -> {
+                    return handleShare(user, profile, reply);
                 }
 
                 case PROFILE_REVOKE -> {
-                    profileService.revokeAccess(user, profile.getId());
-                    reply.send(SendMessage.builder()
-                            .chatId(user.getId().toString())
-                            .text("🚫 Доступ отозван у всех участников, неиспользованные коды удалены")
-                            .build());
-                    renderManage(user, profile, reply);
+                    return handleRevoke(user, profile, reply);
+                }
+
+                case PROFILE_TRANSFER -> {
+                    renderTransferChoice(user, profile, reply);
                     return null;
+                }
+
+                case TRANSFER_OWNERSHIP -> {
+                    return handleTransferChoice(data, user, profile, reply);
                 }
 
                 case PROFILE_DELETE -> {
                     reply.send(SendMessage.builder()
                             .chatId(user.getId().toString())
-                            .text("⚠️ Удалить профиль " + HtmlUtils.bold(profile.getName()) + "? Это действие необратимо.\n"
-                                    + "Чтобы подтвердить, введите слово " + HtmlUtils.bold("удалить")
-                                    + " (любой другой текст отменит действие)")
+                            .text(BotTexts.DELETE_CONFIRM.formatted(
+                                    HtmlUtils.bold(profile.getName()),
+                                    HtmlUtils.bold(ConfirmationWords.DELETE)))
                             .parseMode("HTML")
                             .build());
-                    return CallbackAction.PROFILE_DELETE.prefix(); // ожидаем слово подтверждения или отмены
+                    return CallbackAction.PROFILE_DELETE; // ожидаем слово подтверждения или отмены
                 }
 
                 default -> {
@@ -132,7 +137,7 @@ public class ProfileManageCommand implements BotCommand {
         if (name.isEmpty()) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("Имя профиля не может быть пустым. Введите название:")
+                    .text(BotTexts.RENAME_NAME_EMPTY)
                     .build());
             return marker;
         }
@@ -141,7 +146,7 @@ public class ProfileManageCommand implements BotCommand {
         if (profile == null) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("⚠️ Сначала выберите профиль")
+                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
                     .build());
             return null;
         }
@@ -159,11 +164,45 @@ public class ProfileManageCommand implements BotCommand {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("Профиль переименован в " + HtmlUtils.bold(name) + " ✅")
+                .text(BotTexts.RENAME_SUCCESS.formatted(HtmlUtils.bold(name)))
                 .parseMode("HTML")
                 .build());
 
         renderManage(user, profile, reply);
+        return null;
+    }
+
+    private Object handleTransferConfirmation(Update update, User user, ReplySender reply, TransferChoice choice) {
+        String raw = update.getMessage().getText().trim();
+
+        if (!raw.equalsIgnoreCase(ConfirmationWords.TRANSFER)) {
+            Profile profile = profileService.getActiveProfile(user);
+            reply.send(SendMessage.builder()
+                    .chatId(user.getId().toString())
+                    .text(BotTexts.TRANSFER_CANCELLED)
+                    .build());
+            if (profile != null) {
+                renderManage(user, profile, reply);
+            }
+            return null;
+        }
+
+        try {
+            profileService.transferOwnership(user, choice.profileId(), choice.targetUserId());
+        } catch (ProfileOperationException e) {
+            reply.send(SendMessage.builder()
+                    .chatId(user.getId().toString())
+                    .text(e.getMessage())
+                    .build());
+            return null;
+        }
+
+        profileService.getActiveProfile(user);
+        reply.send(SendMessage.builder()
+                .chatId(user.getId().toString())
+                .text(BotTexts.TRANSFER_SUCCESS)
+                .build());
+        profileSelectionScreen.render(user, reply);
         return null;
     }
 
@@ -173,7 +212,7 @@ public class ProfileManageCommand implements BotCommand {
         if (raw.isEmpty()) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("Чтобы подтвердить удаление, введите слово «удалить». Любой другой текст отменит действие:")
+                    .text(BotTexts.DELETE_PROMPT_PROGRESS.formatted(ConfirmationWords.DELETE))
                     .build());
             return marker;
         }
@@ -182,12 +221,12 @@ public class ProfileManageCommand implements BotCommand {
         if (profile == null) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("⚠️ Сначала выберите профиль")
+                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
                     .build());
             return null;
         }
 
-        if (raw.equalsIgnoreCase("удалить")) {
+        if (raw.equalsIgnoreCase(ConfirmationWords.DELETE)) {
             try {
                 profileService.deleteProfile(user, profile.getId());
             } catch (ProfileOperationException e) {
@@ -199,7 +238,7 @@ public class ProfileManageCommand implements BotCommand {
             }
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
-                    .text("🗑 Профиль " + HtmlUtils.bold(profile.getName()) + " удалён")
+                    .text(BotTexts.DELETE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())))
                     .parseMode("HTML")
                     .build());
             profileSelectionScreen.render(user, reply);
@@ -208,23 +247,100 @@ public class ProfileManageCommand implements BotCommand {
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("🗑 Удаление отменено")
+                .text(BotTexts.DELETE_CANCELLED)
                 .build());
         renderManage(user, profile, reply);
         return null;
     }
 
+
     private void renderManage(User user, Profile profile, ReplySender reply) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
-                .text("⚙️ Управление профилем " + HtmlUtils.bold(profile.getName()) + "\n\n"
-                        + "Здесь вы можете:\n"
-                        + "• 🔗 Поделиться — выдать одноразовый код-приглашение (действует 72 часа)\n"
-                        + "• ✏️ Переименовать профиль\n"
-                        + "• 🚫 Отменить доступ — отозвать доступ у всех участников и удалить коды\n"
-                        + "• 🗑 Удалить профиль — безвозвратно")
+                .text(BotTexts.MANAGE_MENU_HEAD.formatted(HtmlUtils.bold(profile.getName())))
                 .parseMode("HTML")
                 .replyMarkup(keyboard.manageMenu())
                 .build());
+    }
+
+    private Object handleShare(User user, Profile profile, ReplySender reply) {
+        String code = profileService.createInvite(user, profile.getId());
+        reply.send(SendMessage.builder()
+                .chatId(user.getId().toString())
+                .text(BotTexts.SHARE_CODE_TEXT.formatted(
+                        HtmlUtils.bold(profile.getName()), HtmlUtils.bold(code)))
+                .parseMode("HTML")
+                .build());
+        renderManage(user, profile, reply);
+        return null;
+    }
+
+    private Object handleRevoke(User user, Profile profile, ReplySender reply) {
+        profileService.revokeAccess(user, profile.getId());
+        reply.send(SendMessage.builder()
+                .chatId(user.getId().toString())
+                .text(BotTexts.REVOKE_SUCCESS)
+                .build());
+        renderManage(user, profile, reply);
+        return null;
+    }
+
+    private void renderTransferChoice(User user, Profile profile, ReplySender reply) {
+        List<ProfileParticipant> participants = profileService.participants(user, profile.getId());
+        if (participants.isEmpty()) {
+            reply.send(SendMessage.builder()
+                    .chatId(user.getId().toString())
+                    .text(BotTexts.TRANSFER_NO_PARTICIPANTS.formatted(HtmlUtils.bold(profile.getName())))
+                    .parseMode("HTML")
+                    .build());
+            renderManage(user, profile, reply);
+            return;
+        }
+        reply.send(SendMessage.builder()
+                .chatId(user.getId().toString())
+                .text(BotTexts.TRANSFER_PROMPT.formatted(HtmlUtils.bold(profile.getName())))
+                .parseMode("HTML")
+                .replyMarkup(keyboard.transferChoices(participants,
+                        CallbackAction.TRANSFER_OWNERSHIP, profile.getId(), false))
+                .build());
+    }
+
+    private Object handleTransferChoice(String data, User user, Profile profile, ReplySender reply) {
+        String[] payload = data.split(":", 3);
+        if (payload.length < 3) {
+            return null;
+        }
+        Long targetUserId = parseLongId(payload[2]);
+        if (targetUserId == null) {
+            return null;
+        }
+        String targetName = profileService.participants(user, profile.getId()).stream()
+                .filter(p -> p.userId().equals(targetUserId))
+                .findFirst()
+                .map(ParticipantName::of)
+                .orElse(BotTexts.TRANSFER_TARGET_DATIVE);
+        reply.send(SendMessage.builder()
+                .chatId(user.getId().toString())
+                .text(BotTexts.TRANSFER_CONFIRM.formatted(
+                        HtmlUtils.bold(profile.getName()),
+                        HtmlUtils.bold(targetName),
+                        HtmlUtils.bold(ConfirmationWords.TRANSFER)))
+                .parseMode("HTML")
+                .build());
+        return new TransferChoice(profile.getId(), targetUserId);
+    }
+
+    private Long parseLongId(String raw) {
+        try {
+            return Long.valueOf(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Маркер ожидания слова «передать» после выбора нового владельца.
+     */
+    private record TransferChoice(Integer profileId, Long targetUserId) {
     }
 }

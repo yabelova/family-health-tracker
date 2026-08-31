@@ -45,7 +45,10 @@ public class ProfileService {
 
     @Transactional
     public void setActiveProfile(User user, Integer profileId) {
-        profileRepository.deactivateActive(user.getId());
+        if (!profileRepository.isLinked(user.getId(), profileId)) {
+            throw new ProfileOperationException(Error.NOT_FOUND_PARTICIPANT);
+        }
+        profileRepository.deactivateAllActive(user.getId());
         profileRepository.activateProfile(user.getId(), profileId);
         user.setActiveProfileId(profileId);
     }
@@ -114,13 +117,16 @@ public class ProfileService {
     @Transactional
     public void revokeAccess(User user, Integer profileId) {
         checkOwner(user, profileId);
-        profileRepository.deleteLinksExceptUser(profileId, user.getId());
+        profileRepository.deleteParticipantLinks(profileId, user.getId());
         profileInviteRepository.deleteUnusedByProfile(profileId);
     }
 
     @Transactional
     public void deleteProfile(User user, Integer profileId) {
         checkOwner(user, profileId);
+        if (profileRepository.countOtherParticipants(profileId, user.getId()) > 0) {
+            throw new ProfileOperationException(Error.PROFILE_HAS_PARTICIPANTS);
+        }
         profileRepository.deleteById(profileId);
         if (profileId.equals(user.getActiveProfileId())) {
             user.setActiveProfileId(null);
@@ -134,6 +140,26 @@ public class ProfileService {
                 .orElseThrow(() -> new IllegalStateException("Профиль не найден: id=" + profileId));
         profile.setName(name);
         profileRepository.save(profile);
+    }
+
+    public List<ProfileRepository.ProfileParticipant> participants(User user, Integer profileId) {
+        return profileRepository.findProfileParticipants(List.of(profileId));
+    }
+
+    /**
+     * Передача прав владельца другому участнику: цель становится OWNER, текущий — MEMBER
+     */
+    @Transactional
+    public void transferOwnership(User user, Integer profileId, Long targetUserId) {
+        checkOwner(user, profileId);
+        if (targetUserId.equals(user.getId())) {
+            throw new ProfileOperationException(Error.OWN_PROFILE);
+        }
+        boolean linked = profileRepository.isLinkedAs(targetUserId, profileId, MEMBER);
+        if (!linked) {
+            throw new ProfileOperationException(Error.NOT_FOUND_PARTICIPANT);
+        }
+        profileRepository.transferRole(profileId, user.getId(), targetUserId);
     }
 
     private void checkOwner(User user, Integer profileId) {

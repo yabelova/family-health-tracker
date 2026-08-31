@@ -3,6 +3,7 @@ package com.yabelova.healthtracker.telegram.screen;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.service.ProfileService;
+import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
@@ -26,20 +27,12 @@ public class ProfileSelectionScreen {
         List<Profile> profiles = profileService.getProfiles(user);
 
         String text = profiles.isEmpty()
-                ? "У вас пока нет профилей. Создайте новый 👇"
-                : "Выберите активный профиль или создайте новый";
+                ? BotTexts.PROFILE_SELECTION_EMPTY
+                : BotTexts.PROFILE_SELECTION_HAS;
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(text)
-                .replyMarkup(keyboard.navigation(user.getActiveProfileId() != null))
-                .build());
-
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text("Ваши профили (активный отмечен знаком ✓):\n"
-                        + "Нажмите на профиль, чтобы сделать его активным. Новый профиль можно "
-                        + "создать или добавить по коду-приглашению от родных.")
                 .replyMarkup(keyboard.profileSelection(profiles, user.getActiveProfileId()))
                 .build());
     }
