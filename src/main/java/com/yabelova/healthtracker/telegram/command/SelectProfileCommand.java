@@ -32,7 +32,7 @@ public class SelectProfileCommand implements BotCommand {
 
     @Override
     public Set<CallbackAction> callbackActions() {
-        return Set.of(CallbackAction.ACTIVATE_PROFILE);
+        return Set.of(CallbackAction.PROFILE_ACTIVATE);
     }
 
     @Override

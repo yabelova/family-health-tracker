@@ -17,23 +17,44 @@ public final class BotTexts {
 
     // ===== INLINE-КНОПКИ =====
 
+    // Профиль — вход (список и кнопки создания/добавления по коду)
+    public static final String PROFILE_BTN_ACTIVE_PREFIX = "✓ ";
+    public static final String PROFILE_BTN_PREFIX = "👤 ";
     public static final String INLINE_BTN_CREATE_PROFILE = "➕ Создать новый профиль";
     public static final String INLINE_BTN_ADD_BY_CODE = "➕ Добавить по коду";
+
+    // Меню профиля (навигация по разделам)
     public static final String INLINE_BTN_MENU_TAKE = "💊 Принять лекарство";
-    public static final String INLINE_BTN_MENU_PLAN = "📋 План лечения";
-    public static final String INLINE_BTN_MENU_SYMPTOM = "📝 Записать симптом";
+    public static final String INLINE_BTN_MENU_COURSE = "💊 Курсы лечения";
+    public static final String INLINE_BTN_MENU_SYMPTOM = "📝 Симптомы";
     public static final String INLINE_BTN_MENU_MANAGE = "⚙️ Управление профилем";
+
+    // Разделы записей
+    public static final String INLINE_BTN_SECTION_ADD = "➕ Добавить";
+    public static final String INLINE_BTN_SECTION_EXPORT = "📤 Выгрузить";
+    public static final String INLINE_BTN_SECTION_DELETE = "🗑 Удалить";
+    public static final String INLINE_BTN_SECTION_BACK = "↩️ Назад";
+
+    // Управление профилем (меню владельца)
     public static final String INLINE_BTN_MENU_SHARE = "🔗 Поделиться профилем";
     public static final String INLINE_BTN_MENU_RENAME = "✏️ Переименовать профиль";
     public static final String INLINE_BTN_MENU_REVOKE = "🚫 Отменить доступ";
     public static final String INLINE_BTN_MENU_TRANSFER = "👑 Передать владение";
-    public static final String INLINE_BTN_MENU_DELETE = "🗑 Удалить профиль";
     public static final String INLINE_BTN_TRANSFER_TO = "👑 Передать → ";
+    public static final String INLINE_BTN_MENU_DELETE = "🗑 Удалить профиль";
+
+    // Уведомления
     public static final String INLINE_BTN_NOTIFICATION_EDIT = "✏️ Изменить время";
     public static final String INLINE_BTN_NOTIFICATION_SET = "⏰ Ввести время";
     public static final String INLINE_BTN_NOTIFICATION_DISABLE = "🚫 Выключить уведомления";
-    public static final String PROFILE_BTN_ACTIVE_PREFIX = "✓ ";
-    public static final String PROFILE_BTN_PREFIX = "👤 ";
+
+    // Визард (шаги анкеты и подтверждение)
+    public static final String INLINE_BTN_WIZARD_CONFIRM = "✅ Подтвердить";
+    public static final String INLINE_BTN_WIZARD_RETRY = "🔄 Начать заново";
+    public static final String INLINE_BTN_WIZARD_CANCEL = "❌ Отменить";
+    public static final String INLINE_BTN_WIZARD_SKIP = "⏭️ Пропустить";
+    public static final String INLINE_BTN_BOOL_YES = "Да";
+    public static final String INLINE_BTN_BOOL_NO = "Нет";
 
     // ===== ОБЩЕЕ =====
 
@@ -43,7 +64,7 @@ public final class BotTexts {
     public static final String TRANSFER_TARGET_DATIVE = "участнику";
     public static final String PRIVACY_TRANSFER_TARGET_UNKNOWN = "пользователю";
 
-    // ===== СТАРТ / ПРИВАТНОСТЬ / ПОМОЩЬ =====
+    // ===== СТАРТ / ПОМОЩЬ =====
 
     public static final String DISCLAIMER = """
             ⚠️ Приватность и безопасность
@@ -79,22 +100,15 @@ public final class BotTexts {
             • Вы можете удалить все свои данные в любой момент: /delete_all_data
             """;
 
-    // ===== ЭКРАН «МЕНЮ ПРОФИЛЯ» =====
-
-    public static final String PROFILE_MENU_TITLE = "👤 Выбранный профиль: %s\n\nВыберите действие:";
-
-    // ===== ЭКРАН «ВЫБОР ПРОФИЛЯ» =====
+    // ===== ПРОФИЛЬ — ВХОД (выбор / создание / добавление по коду) =====
 
     public static final String PROFILE_SELECTION_HAS = "Выберите или создайте новый\n\nВаши профили (активный отмечен ✓):";
     public static final String PROFILE_SELECTION_EMPTY = "У вас пока нет профилей. Создайте новый 👇";
-
-    // ===== СОЗДАНИЕ ПРОФИЛЯ =====
+    public static final String PROFILE_UNAVAILABLE = "⚠️ Этот профиль больше недоступен. Выберите профиль заново";
 
     public static final String CREATE_PROFILE_NAME_EMPTY = "Имя профиля не может быть пустым. Введите название:";
     public static final String CREATE_PROFILE_PROMPT = "Введите имя или название нового профиля (например: 'Дочь Аня', 'Мой профиль'):";
     public static final String CREATE_PROFILE_SUCCESS = "Профиль %s успешно создан и выбран как активный ✅";
-
-    // ===== ПРИГЛАШЕНИЯ / ПОДКЛЮЧЕНИЕ ПО КОДУ =====
 
     public static final String ADD_CODE_PROMPT = "Введите код приглашения:";
     public static final String ADD_PROFILE_SUCCESS = "✅ Профиль %s добавлен! Выберите его в списке, чтобы сделать активным";
@@ -108,38 +122,55 @@ public final class BotTexts {
             «👤 Выбор профиля» → «➕ Добавить по коду»
             """;
 
+    // ===== ЭКРАН «МЕНЮ ПРОФИЛЯ» =====
+
+    public static final String PROFILE_MENU_TITLE = "👤 Выбранный профиль: %s\n\nВыберите действие:";
+
+    // ===== РАЗДЕЛЫ ЗАПИСЕЙ (симптомы / курсы лечения) =====
+
+    public static final String SYMPTOM_SAVED = "✅ Симптом записан!";
+    public static final String SYMPTOM_CANCELLED = "📝 Запись симптома отменена";
+    public static final String SYMPTOM_SECTION_TITLE = "📝 Симптомы\n\nВыберите действие:";
+    public static final String SYMPTOM_EXPORT_EMPTY = "За последние 7 дней симптомов не записано";
+
+    public static final String MEDICATION_COURSE_SAVED = "✅ Курс лечения добавлен!";
+    public static final String MEDICATION_COURSE_CANCELLED = "📝 Добавление курса отменено";
+    public static final String MEDICATION_COURSE_SECTION_TITLE = "💊 Курсы лечения\n\nВыберите действие:";
+    public static final String MEDICATION_COURSE_EXPORT_EMPTY = "Курсов лечения пока нет";
+
+    public static final String EXPORT_HEAD = "📤 Записи профиля %s:";
+    public static final String DELETE_RECORDS_EMPTY = "Записей для удаления нет";
+    public static final String DELETE_LIST_HEAD = "🗑 Выберите запись для удаления:";
+    public static final String RECORD_DELETED = "✅ Запись удалена";
+
     // ===== УПРАВЛЕНИЕ ПРОФИЛЕМ =====
+
+    public static final String MANAGE_MENU_HEAD = "⚙️ Управление профилем %s\n\nВыберите действие:";
 
     public static final String RENAME_PROMPT = "Введите новое имя профиля:";
     public static final String RENAME_NAME_EMPTY = "Имя профиля не может быть пустым. Введите название:";
     public static final String RENAME_SUCCESS = "Профиль переименован в %s ✅";
     public static final String REVOKE_SUCCESS = "🚫 Доступ отозван у всех участников, неиспользованные коды удалены";
 
-    public static final String MANAGE_MENU_HEAD = "⚙️ Управление профилем %s\n\nВыберите действие:";
-
-    public static final String DELETE_CONFIRM = "⚠️ Удалить профиль %s? Это действие необратимо.\nЧтобы подтвердить, введите слово %s (любой другой текст отменит действие)";
-    public static final String DELETE_PROMPT_PROGRESS = "Чтобы подтвердить удаление, введите слово «%s». Любой другой текст отменит действие:";
-    public static final String DELETE_SUCCESS = "🗑 Профиль %s удалён";
-    public static final String DELETE_CANCELLED = "🗑 Удаление отменено";
     public static final String TRANSFER_NO_PARTICIPANTS = "👑 В профиле %s нет других участников";
     public static final String TRANSFER_PROMPT = "👑 Передача владения профилем %s:\nНовый владелец сможет управлять профилем и его участниками.\n";
     public static final String TRANSFER_CONFIRM = "👑 Передать владение профилем %s участнику %s?\nЧтобы подтвердить, введите слово %s (любой другой текст отменит действие)";
     public static final String TRANSFER_SUCCESS = "👑 Владение профилем передано, вы остались участником";
     public static final String TRANSFER_CANCELLED = "👑 Передача отменена";
 
+    public static final String DELETE_CONFIRM = "⚠️ Удалить профиль %s? Это действие необратимо.\nЧтобы подтвердить, введите слово %s (любой другой текст отменит действие)";
+    public static final String DELETE_PROMPT_PROGRESS = "Чтобы подтвердить удаление, введите слово «%s». Любой другой текст отменит действие:";
+    public static final String DELETE_SUCCESS = "🗑 Профиль %s удалён";
+    public static final String DELETE_CANCELLED = "🗑 Удаление отменено";
+
     // ===== УВЕДОМЛЕНИЯ =====
 
     public static final String NOTIFICATIONS_TIME_UNSET = "не задано";
     public static final String NOTIFICATIONS_CURRENT = "🔔 Текущее время напоминаний: %s.\n\nВыберите действие:";
-
     public static final String NOTIFICATIONS_ENTER_TIME = "Введите время для ежедневных уведомлений в формате Ч:ММ (например, 8:30 или 08:30):";
     public static final String NOTIFICATIONS_INVALID_FORMAT = "⚠️ Неверный формат! Введите время в формате Ч:ММ (например, 8:30 или 08:30):";
 
-    // ===== ПРОФИЛЬ (ВЫБОР) =====
-
-    public static final String PROFILE_UNAVAILABLE = "⚠️ Этот профиль больше недоступен. Выберите профиль заново";
-
-    // ===== УДАЛЕНИЕ АККАУНТА =====
+    // ===== ПРИВАТНОСТЬ / УДАЛЕНИЕ АККАУНТА =====
 
     public static final String DELETE_ALL_ANSWER = "✅";
 
@@ -167,6 +198,12 @@ public final class BotTexts {
     public static final String DELETION_LINE_OWNER_PENDING = "• «%s» — требуется решение";
     public static final String DELETION_LINE_OWNER_TRANSFERRED = "• «%s» — владение передано «%s»";
     public static final String DELETION_LINE_OWNER_REVOKED = "• «%s» — доступ будет отозван, профиль удалён";
+
+    // ===== АНКЕТА (ВИЗАРД) =====
+
+    public static final String WIZARD_STEP_TEMPLATE = "Шаг %d/%d: %s\n\n%s";
+    public static final String WIZARD_INVALID_INPUT = "⚠️ Неверный ввод. Попробуйте ещё раз:";
+    public static final String WIZARD_SUMMARY = "📋 Проверьте введённые данные:\n\n%s\n\nПодтверждаете?";
 
     private BotTexts() {
     }

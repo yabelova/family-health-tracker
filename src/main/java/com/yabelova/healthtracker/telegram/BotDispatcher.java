@@ -1,6 +1,7 @@
 package com.yabelova.healthtracker.telegram;
 
 import com.yabelova.healthtracker.domain.User;
+import com.yabelova.healthtracker.exception.RecordOperationException;
 import com.yabelova.healthtracker.service.UserService;
 import com.yabelova.healthtracker.telegram.command.BotCommand;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
@@ -68,12 +69,21 @@ public class BotDispatcher {
             }
         }
 
-        Object next = switch (route.kind()) {
-            case CALLBACK -> active.handleCallback(update, user, reply, route.marker());
-            case REPLY -> active.handleText(update, user, reply);
-            case PENDING -> active.handlePendingText(update, user, reply, route.marker());
-            case NONE -> null;
-        };
+        Object next;
+        try {
+            next = switch (route.kind()) {
+                case CALLBACK -> active.handleCallback(update, user, reply, route.marker());
+                case REPLY -> active.handleText(update, user, reply);
+                case PENDING -> active.handlePendingText(update, user, reply, route.marker());
+                case NONE -> null;
+            };
+        } catch (RecordOperationException e) {
+            reply.send(SendMessage.builder()
+                    .chatId(user.getId().toString())
+                    .text(e.getMessage())
+                    .build());
+            next = null;
+        }
 
         if (next != null) {
             awaitingInput.put(input.chatId(), new AwaitingRequest(active, next));
@@ -82,38 +92,6 @@ public class BotDispatcher {
         } else {
             awaitingInput.remove(input.chatId());
         }
-    }
-
-    private Route route(Update update, Long chatId) {
-        if (update.hasCallbackQuery()) {
-            String data = update.getCallbackQuery().getData();
-            CallbackAction action = CallbackAction.fromData(data);
-            BotCommand callbackCmd = action != null ? callbackCommands.get(action) : null;
-            if (callbackCmd == null) {
-                awaitingInput.remove(chatId);
-                log.warn("Неизвестное callback-действие [{}] от пользователя [{}]", data, chatId);
-                replyUnexpected(chatId);
-                return Route.none();
-            }
-            AwaitingRequest pending = awaitingInput.get(chatId);
-            return Route.callback(callbackCmd, pending != null ? pending.marker() : null);
-        }
-
-        String text = textOf(update);
-        BotCommand textCmd = textCommands.get(text);
-        if (textCmd != null) {
-            awaitingInput.remove(chatId);
-            return Route.reply(textCmd);
-        }
-
-        AwaitingRequest pending = awaitingInput.get(chatId);
-        if (pending != null) {
-            return Route.pending(pending.command(), pending.marker());
-        }
-
-        log.warn("Не обрабатываемый ввод: chat={} len={}", chatId, text.length());
-        replyUnexpected(chatId);
-        return Route.none();
     }
 
     private void putText(String key, BotCommand command) {
@@ -126,24 +104,6 @@ public class BotDispatcher {
         if (callbackCommands.put(action, command) != null) {
             throw new IllegalStateException("Дублирующееся callback-действие: " + action);
         }
-    }
-
-    private void replyUnexpected(Long chatId) {
-        reply.send(SendMessage.builder()
-                .chatId(chatId.toString())
-                .text(BotTexts.COMMON_UNKNOWN_COMMAND)
-                .build());
-    }
-
-    private String textOf(Update update) {
-        return update.getMessage().getText() != null ? update.getMessage().getText() : "";
-    }
-
-    private String markerLabel(Object marker) {
-        if (marker == null) {
-            return "null";
-        }
-        return marker.getClass().getSimpleName();
     }
 
     private TelegramInput parse(Update update) {
@@ -165,13 +125,89 @@ public class BotDispatcher {
         return userService.getOrCreate(input.chatId(), input.firstName(), input.userName());
     }
 
+    private Route route(Update update, Long chatId) {
+        return update.hasCallbackQuery()
+                ? routeCallback(update, chatId)
+                : routeText(update, chatId);
+    }
+
+    private String markerLabel(Object marker) {
+        if (marker == null) {
+            return "null";
+        }
+        return marker.getClass().getSimpleName();
+    }
+
+    private Route routeCallback(Update update, Long chatId) {
+        String data = update.getCallbackQuery().getData();
+        CallbackAction action = CallbackAction.fromData(data);
+        AwaitingRequest pending = awaitingInput.get(chatId);
+
+        // Универсальная кнопка визарда: идет в команду, ожидающую ввод; без ожидания — устаревший клик.
+        if (action != null && action.isWizardAction()) {
+            if (pending != null) {
+                return Route.callback(pending.command(), pending.marker());
+            }
+            return unroutable(chatId, "Устаревший wizard-клик [" + data + "]");
+        }
+
+        // Обычная кнопка: незнакомое действие или нет команды — «нет такой команды».
+        BotCommand callbackCmd = action != null ? callbackCommands.get(action) : null;
+        if (callbackCmd == null) {
+            replyUnexpected(chatId);
+            return unroutable(chatId, "Неизвестное callback-действие [" + data + "]");
+        }
+        // Клик по чужой команде снимает текущее ожидание (одно ожидание на чат).
+        if (pending != null && pending.command() != callbackCmd) {
+            awaitingInput.remove(chatId);
+            pending = null;
+        }
+        return Route.callback(callbackCmd, pending != null ? pending.marker() : null);
+    }
+
+    private Route routeText(Update update, Long chatId) {
+        String text = textOf(update);
+
+        // Текст — команда меню: сразу REPLY, ожидание снимается.
+        BotCommand textCmd = textCommands.get(text);
+        if (textCmd != null) {
+            awaitingInput.remove(chatId);
+            return Route.reply(textCmd);
+        }
+
+        // Есть ожидание ввода: текст — ответ ожидающей команде (PENDING).
+        AwaitingRequest pending = awaitingInput.get(chatId);
+        if (pending != null) {
+            return Route.pending(pending.command(), pending.marker());
+        }
+
+        // Ни команда, ни ожидание: «не понимаю».
+        replyUnexpected(chatId);
+        return unroutable(chatId, "Не обрабатываемый ввод (len=" + text.length() + ")");
+    }
+
+    private Route unroutable(Long chatId, String reason) {
+        awaitingInput.remove(chatId);
+        log.warn("{} от пользователя [{}]", reason, chatId);
+        return Route.none();
+    }
+
+    private void replyUnexpected(Long chatId) {
+        reply.send(SendMessage.builder()
+                .chatId(chatId.toString())
+                .text(BotTexts.COMMON_UNKNOWN_COMMAND)
+                .build());
+    }
+
+    private String textOf(Update update) {
+        return update.getMessage().getText() != null ? update.getMessage().getText() : "";
+    }
+
     private record TelegramInput(Long chatId, String text, boolean callback,
                                  String firstName, String userName) {
     }
 
-    private enum RouteKind {
-        CALLBACK, REPLY, PENDING, NONE
-    }
+    private enum RouteKind {CALLBACK, REPLY, PENDING, NONE}
 
     private record AwaitingRequest(BotCommand command, Object marker) {
     }

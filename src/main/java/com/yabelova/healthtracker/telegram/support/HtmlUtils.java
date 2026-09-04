@@ -9,7 +9,7 @@ public final class HtmlUtils {
         return "<b>" + escape(s) + "</b>";
     }
 
-    private static String escape(String s) {
+    public static String escape(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 }

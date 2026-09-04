@@ -39,7 +39,7 @@ public class ProfileManageCommand implements BotCommand {
                 CallbackAction.PROFILE_DELETE,
                 CallbackAction.PROFILE_RENAME,
                 CallbackAction.PROFILE_TRANSFER,
-                CallbackAction.TRANSFER_OWNERSHIP
+                CallbackAction.PROFILE_TRANSFER_OWNERSHIP
         );
     }
 
@@ -103,7 +103,7 @@ public class ProfileManageCommand implements BotCommand {
                     return null;
                 }
 
-                case TRANSFER_OWNERSHIP -> {
+                case PROFILE_TRANSFER_OWNERSHIP -> {
                     return handleTransferChoice(data, user, profile, reply);
                 }
 
@@ -286,7 +286,7 @@ public class ProfileManageCommand implements BotCommand {
     }
 
     private void renderTransferChoice(User user, Profile profile, ReplySender reply) {
-        List<ProfileParticipant> participants = profileService.participants(user, profile.getId());
+        List<ProfileParticipant> participants = profileService.participants(profile.getId());
         if (participants.isEmpty()) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
@@ -301,7 +301,7 @@ public class ProfileManageCommand implements BotCommand {
                 .text(BotTexts.TRANSFER_PROMPT.formatted(HtmlUtils.bold(profile.getName())))
                 .parseMode("HTML")
                 .replyMarkup(keyboard.transferChoices(participants,
-                        CallbackAction.TRANSFER_OWNERSHIP, profile.getId(), false))
+                        CallbackAction.PROFILE_TRANSFER_OWNERSHIP, profile.getId(), false))
                 .build());
     }
 
@@ -314,7 +314,7 @@ public class ProfileManageCommand implements BotCommand {
         if (targetUserId == null) {
             return null;
         }
-        String targetName = profileService.participants(user, profile.getId()).stream()
+        String targetName = profileService.participants(profile.getId()).stream()
                 .filter(p -> p.userId().equals(targetUserId))
                 .findFirst()
                 .map(ParticipantName::of)

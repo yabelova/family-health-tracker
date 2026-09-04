@@ -5,5 +5,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@SuppressWarnings("NullableProblems")
 public interface UserRepository extends CrudRepository<User, Long> {
 }

@@ -99,7 +99,10 @@ public class ProfileService {
             throw new ProfileOperationException(Error.OWN_PROFILE);
         }
         boolean alreadyLinked = profileRepository.findAllByUserId(user.getId()).stream()
-                .anyMatch(p -> p.getId().equals(invite.getProfileId()));
+                .anyMatch(p -> {
+                    assert p.getId() != null;
+                    return p.getId().equals(invite.getProfileId());
+                });
         if (alreadyLinked) {
             throw new ProfileOperationException(Error.ALREADY_LINKED);
         }
@@ -142,7 +145,7 @@ public class ProfileService {
         profileRepository.save(profile);
     }
 
-    public List<ProfileRepository.ProfileParticipant> participants(User user, Integer profileId) {
+    public List<ProfileRepository.ProfileParticipant> participants(Integer profileId) {
         return profileRepository.findProfileParticipants(List.of(profileId));
     }
 

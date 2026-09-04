@@ -26,7 +26,7 @@ public class AddProfileCommand implements BotCommand {
 
     @Override
     public Set<CallbackAction> callbackActions() {
-        return Set.of(CallbackAction.PROFILE_ADD);
+        return Set.of(CallbackAction.PROFILE_ADD_BY_CODE);
     }
 
     @Override
@@ -73,6 +73,6 @@ public class AddProfileCommand implements BotCommand {
                 .text(BotTexts.ADD_CODE_PROMPT)
                 .build());
 
-        return CallbackAction.PROFILE_ADD; // ожидаем следующий текст (код)
+        return CallbackAction.PROFILE_ADD_BY_CODE; // ожидаем следующий текст (код)
     }
 }

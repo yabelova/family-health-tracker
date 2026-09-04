@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Repository
+@SuppressWarnings("NullableProblems")
 public interface ProfileInviteRepository extends CrudRepository<ProfileInvite, Integer> {
 
     Optional<ProfileInvite> findByCode(String code);

@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Repository
+@SuppressWarnings("NullableProblems")
 public interface ProfileRepository extends CrudRepository<Profile, Integer> {
 
     @Query("""

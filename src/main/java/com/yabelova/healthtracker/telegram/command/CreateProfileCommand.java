@@ -25,7 +25,7 @@ public class CreateProfileCommand implements BotCommand {
 
     @Override
     public Set<CallbackAction> callbackActions() {
-        return Set.of(CallbackAction.CREATE_PROFILE);
+        return Set.of(CallbackAction.PROFILE_CREATE);
     }
 
     @Override
@@ -63,6 +63,6 @@ public class CreateProfileCommand implements BotCommand {
                 .text(BotTexts.CREATE_PROFILE_PROMPT)
                 .build());
 
-        return CallbackAction.CREATE_PROFILE; // ожидаем следующий текст (имя)
+        return CallbackAction.PROFILE_CREATE; // ожидаем следующий текст (имя)
     }
 }

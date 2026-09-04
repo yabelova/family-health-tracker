@@ -46,14 +46,57 @@ public class KeyboardFactory {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TAKE, CallbackAction.MAIN_MENU_ACTION.prefix())));
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_PLAN, CallbackAction.MAIN_MENU_ACTION.prefix())));
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_SYMPTOM, CallbackAction.MAIN_MENU_ACTION.prefix())));
-
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_COURSE, CallbackAction.MEDICATION_COURSE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_SYMPTOM, CallbackAction.SYMPTOM_LOG.prefix())));
         if (isOwner) {
             rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_MANAGE, CallbackAction.PROFILE_MANAGE.prefix())));
         }
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, CallbackAction.MAIN_MENU_ACTION.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Меню раздела записей: Добавить / Выгрузить / Удалить
+     */
+    public InlineKeyboardMarkup sectionMenu(CallbackAction add,
+                                            CallbackAction export,
+                                            CallbackAction delete) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_ADD, add.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_EXPORT, export.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_DELETE, delete.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, CallbackAction.MAIN_MENU_ACTION.prefix())));
+
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Список записей для удаления: кнопка на каждую (callback deleteSelected:id)
+     * + внизу кнопка «Назад» в раздел.
+     */
+    public InlineKeyboardMarkup recordDeleteList(List<RecordDeleteOption> options,
+                                                 CallbackAction deleteSelected,
+                                                 CallbackAction back) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (RecordDeleteOption option : options) {
+            rows.add(List.of(inlineButton(option.label(),
+                    deleteSelected.prefix() + ":" + option.id())));
+        }
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, back.prefix())));
+
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Клавиатура выгрузки: кнопка «Назад» в раздел.
+     */
+    public InlineKeyboardMarkup backToSection(CallbackAction back) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, back.prefix()))))
+                .build();
     }
 
     /**
@@ -108,12 +151,12 @@ public class KeyboardFactory {
             boolean isActive = profile.getId().equals(activeProfileId);
             btn.setText((isActive ? BotTexts.PROFILE_BTN_ACTIVE_PREFIX : "")
                     + BotTexts.PROFILE_BTN_PREFIX + profile.getName());
-            btn.setCallbackData(CallbackAction.ACTIVATE_PROFILE.prefix() + ":" + profile.getId());
+            btn.setCallbackData(CallbackAction.PROFILE_ACTIVATE.prefix() + ":" + profile.getId());
             rows.add(List.of(btn));
         }
 
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_CREATE_PROFILE, CallbackAction.CREATE_PROFILE.prefix())));
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_ADD_BY_CODE, CallbackAction.PROFILE_ADD.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_CREATE_PROFILE, CallbackAction.PROFILE_CREATE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_ADD_BY_CODE, CallbackAction.PROFILE_ADD_BY_CODE.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
@@ -132,6 +175,43 @@ public class KeyboardFactory {
             rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_NOTIFICATION_DISABLE,
                     CallbackAction.NOTIFICATION_DISABLE.prefix())));
         }
+
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Клавиатура шага анкеты: для optional-поля — «Пропустить», для булева — «Да/Нет».
+     * Когда оба флага false — вернуть null (ожидаем свободный текст без кнопок).
+     */
+    public InlineKeyboardMarkup formStepKeyboard(boolean isOptional, boolean isBoolean) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        if (isBoolean) {
+            rows.add(List.of(
+                    inlineButton(BotTexts.INLINE_BTN_BOOL_YES, CallbackAction.WIZARD_BOOL_YES.prefix()),
+                    inlineButton(BotTexts.INLINE_BTN_BOOL_NO, CallbackAction.WIZARD_BOOL_NO.prefix())));
+        }
+
+        if (isOptional) {
+            rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_WIZARD_SKIP, CallbackAction.WIZARD_SKIP.prefix())));
+        }
+
+        if (rows.isEmpty()) {
+            return null;
+        }
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Клавиатура подтверждения анкеты: подтвердить / начать заново / отмена.
+     */
+    public InlineKeyboardMarkup formConfirmKeyboard() {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_WIZARD_CONFIRM, CallbackAction.WIZARD_CONFIRM.prefix())));
+        rows.add(List.of(
+                inlineButton(BotTexts.INLINE_BTN_WIZARD_RETRY, CallbackAction.WIZARD_RETRY.prefix()),
+                inlineButton(BotTexts.INLINE_BTN_WIZARD_CANCEL, CallbackAction.WIZARD_CANCEL.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
