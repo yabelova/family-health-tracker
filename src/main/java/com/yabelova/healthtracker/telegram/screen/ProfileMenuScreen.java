@@ -20,8 +20,9 @@ public class ProfileMenuScreen {
 
     private final ProfileService profileService;
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
-    public void render(User user, ReplySender reply) {
+    public void render(User user) {
         Profile profile = profileService.getActiveProfile(user);
 
         if (profile == null) {

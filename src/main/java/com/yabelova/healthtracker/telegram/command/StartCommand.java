@@ -17,6 +17,7 @@ import java.util.Set;
 public class StartCommand implements BotCommand {
 
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
     @Override
     public Set<String> textKeys() {
@@ -24,7 +25,7 @@ public class StartCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(BotTexts.DISCLAIMER)

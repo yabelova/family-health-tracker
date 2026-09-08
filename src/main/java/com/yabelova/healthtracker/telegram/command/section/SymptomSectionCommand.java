@@ -1,19 +1,16 @@
 package com.yabelova.healthtracker.telegram.command.section;
 
 import com.yabelova.healthtracker.domain.SymptomLog;
-import com.yabelova.healthtracker.domain.SymptomLogProperties;
 import com.yabelova.healthtracker.service.ProfileService;
 import com.yabelova.healthtracker.service.SymptomService;
 import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.screen.RecordSectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.ReplySender;
+import com.yabelova.healthtracker.util.Dates;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.Comparator;
 import java.util.List;
 
@@ -22,15 +19,12 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
 
     private final SymptomService symptomService;
 
-    private static final DateTimeFormatter TIME = new DateTimeFormatterBuilder()
-            .appendPattern("dd.MM.yyyy HH:mm")
-            .toFormatter();
-
     public SymptomSectionCommand(ProfileService profileService,
                                  RecordSectionScreen sectionScreen,
                                  ProfileSelectionScreen profileSelectionScreen,
-                                 SymptomService symptomService) {
-        super(profileService, sectionScreen, profileSelectionScreen);
+                                 SymptomService symptomService,
+                                 ReplySender reply) {
+        super(profileService, sectionScreen, profileSelectionScreen, reply);
         this.symptomService = symptomService;
     }
 
@@ -67,7 +61,7 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
     @Override
     protected List<SymptomLog> listForExport(Long userId, Integer profileId) {
         List<SymptomLog> logs = symptomService.listLastSevenDays(userId, profileId);
-        logs.sort(Comparator.comparing(this::effectiveTime));
+        logs.sort(Comparator.comparing(log -> log.getProperties().getSymptomTime()));
         return logs;
     }
 
@@ -83,12 +77,14 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
 
     @Override
     protected String deleteLabel(SymptomLog record) {
-        return TIME.format(effectiveTime(record)) + " — " + description(record);
+        return Dates.DATE_TIME.format(record.getProperties().getSymptomTime())
+                + " — " + description(record);
     }
 
     @Override
     protected String formatExport(SymptomLog record) {
-        return TIME.format(effectiveTime(record)) + " — " + description(record);
+        return Dates.DATE_TIME.format(record.getProperties().getSymptomTime())
+                + " — " + description(record);
     }
 
     @Override
@@ -101,22 +97,8 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
         symptomService.delete(userId, profileId, id);
     }
 
-    /**
-     * Если пользователь не задал время симптома — используем время создания записи.
-     */
-    private LocalDateTime effectiveTime(SymptomLog log) {
-        LocalDateTime userTime = properties(log).getSymptomTime();
-        return userTime != null
-                ? userTime
-                : LocalDateTime.ofInstant(log.getCreatedAt(), ZoneId.systemDefault());
-    }
-
     private String description(SymptomLog log) {
-        String description = properties(log).getDescription();
+        String description = log.getProperties().getDescription();
         return description == null ? "" : description;
-    }
-
-    private SymptomLogProperties properties(SymptomLog log) {
-        return log.getProperties() != null ? log.getProperties() : new SymptomLogProperties();
     }
 }

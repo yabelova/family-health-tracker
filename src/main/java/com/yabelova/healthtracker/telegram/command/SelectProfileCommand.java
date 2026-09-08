@@ -10,7 +10,6 @@ import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -24,6 +23,7 @@ public class SelectProfileCommand implements BotCommand {
     private final ProfileService profileService;
     private final ProfileSelectionScreen profileSelectionScreen;
     private final ProfileMenuScreen profileMenuScreen;
+    private final ReplySender reply;
 
     @Override
     public Set<String> textKeys() {
@@ -36,17 +36,15 @@ public class SelectProfileCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
-        profileSelectionScreen.render(user, reply);
+    public Object handleText(Update update, User user) {
+        profileSelectionScreen.render(user);
         return null;
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user) {
         String data = update.getCallbackQuery().getData();
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .build());
+        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         try {
             Integer profileId = Integer.valueOf(CallbackAction.payloadOf(data));
@@ -57,11 +55,11 @@ public class SelectProfileCommand implements BotCommand {
                     .chatId(user.getId().toString())
                     .text(BotTexts.PROFILE_UNAVAILABLE)
                     .build());
-            profileSelectionScreen.render(user, reply);
+            profileSelectionScreen.render(user);
             return null;
         }
 
-        profileMenuScreen.render(user, reply);
+        profileMenuScreen.render(user);
         return null;
     }
 }

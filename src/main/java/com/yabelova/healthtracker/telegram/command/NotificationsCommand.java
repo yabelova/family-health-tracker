@@ -9,7 +9,6 @@ import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -24,6 +23,7 @@ public class NotificationsCommand implements BotCommand {
 
     private final NotificationService notificationService;
     private final NotificationsScreen notificationsScreen;
+    private final ReplySender reply;
 
     @Override
     public Set<String> textKeys() {
@@ -36,20 +36,20 @@ public class NotificationsCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
-        notificationsScreen.render(user, reply);
+    public Object handleText(Update update, User user) {
+        notificationsScreen.render(user);
         return null;
     }
 
     @Override
-    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
+    public Object handlePendingText(Update update, User user, Object marker) {
         String raw = update.getMessage().getText().trim();
 
         try {
             LocalTime time = notificationService.setTime(user, raw);
             log.info("Установлено время уведомлений для [{}]: {}", user.getId(), time);
 
-            notificationsScreen.render(user, reply);
+            notificationsScreen.render(user);
             return null;
 
         } catch (DateTimeParseException e) {
@@ -62,11 +62,9 @@ public class NotificationsCommand implements BotCommand {
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user) {
         CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .build());
+        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         if (action == CallbackAction.NOTIFICATION_EDIT) {
             reply.send(SendMessage.builder()
@@ -77,7 +75,7 @@ public class NotificationsCommand implements BotCommand {
 
         } else if (action == CallbackAction.NOTIFICATION_DISABLE) {
             notificationService.disable(user);
-            notificationsScreen.render(user, reply);
+            notificationsScreen.render(user);
             return null;
         }
 

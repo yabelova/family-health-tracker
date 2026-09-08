@@ -8,9 +8,10 @@ import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.screen.RecordSectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.ReplySender;
+import com.yabelova.healthtracker.util.Dates;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -18,13 +19,12 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
 
     private final MedicationCourseService courseService;
 
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
     public MedicationCourseSectionCommand(ProfileService profileService,
                                           RecordSectionScreen sectionScreen,
                                           ProfileSelectionScreen profileSelectionScreen,
-                                          MedicationCourseService courseService) {
-        super(profileService, sectionScreen, profileSelectionScreen);
+                                          MedicationCourseService courseService,
+                                          ReplySender reply) {
+        super(profileService, sectionScreen, profileSelectionScreen, reply);
         this.courseService = courseService;
     }
 
@@ -75,26 +75,26 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
 
     @Override
     protected String deleteLabel(MedicationCourse record) {
-        MedicationCourseProperties properties = properties(record);
-        StringBuilder sb = new StringBuilder(medication(record));
+        MedicationCourseProperties properties = record.getProperties();
+        StringBuilder sb = new StringBuilder(properties.getMedication());
         if (properties.getDaysCount() != null) {
             sb.append(" ").append(properties.getDaysCount()).append(" дн.");
         }
         if (properties.getStartDate() != null) {
-            sb.append(" с ").append(DATE.format(properties.getStartDate()));
+            sb.append(" с ").append(Dates.DATE.format(properties.getStartDate()));
         }
         return sb.toString();
     }
 
     @Override
     protected String formatExport(MedicationCourse record) {
-        MedicationCourseProperties properties = properties(record);
+        MedicationCourseProperties properties = record.getProperties();
         StringBuilder sb = new StringBuilder();
-        sb.append("💊 ").append(medication(record));
+        sb.append("💊 ").append(properties.getMedication());
 
         java.time.LocalDate startDate = properties.getStartDate();
         if (startDate != null) {
-            sb.append(" — с ").append(DATE.format(startDate));
+            sb.append(" — с ").append(Dates.DATE.format(startDate));
         }
         if (properties.getDaysCount() != null) {
             sb.append(", ").append(properties.getDaysCount()).append(" дн.");
@@ -116,16 +116,5 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
     @Override
     protected void delete(Long userId, Integer profileId, Integer id) {
         courseService.delete(userId, profileId, id);
-    }
-
-    private String medication(MedicationCourse record) {
-        String medication = properties(record).getMedication();
-        return medication == null ? "—" : medication;
-    }
-
-    private MedicationCourseProperties properties(MedicationCourse record) {
-        return record.getProperties() != null
-                ? record.getProperties()
-                : new MedicationCourseProperties();
     }
 }

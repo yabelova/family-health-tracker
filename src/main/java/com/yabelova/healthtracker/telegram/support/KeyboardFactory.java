@@ -1,5 +1,6 @@
 package com.yabelova.healthtracker.telegram.support;
 
+import com.yabelova.healthtracker.domain.MedicationCourse;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.repository.ProfileRepository;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +20,7 @@ import java.util.List;
 public class KeyboardFactory {
 
     /**
-     * Постоянная reply-панель: рисуется один раз на /start и живёт сама.
+     * Постоянная reply-панель: рисуется один раз на /start и живет сама.
      * Кнопки всегда одни и те же, без условий.
      */
     public ReplyKeyboardMarkup navigation() {
@@ -45,7 +49,7 @@ public class KeyboardFactory {
     public InlineKeyboardMarkup profileMenu(boolean isOwner) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TAKE, CallbackAction.MAIN_MENU_ACTION.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TAKE, CallbackAction.INTAKE_LOG.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_COURSE, CallbackAction.MEDICATION_COURSE.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_SYMPTOM, CallbackAction.SYMPTOM_LOG.prefix())));
         if (isOwner) {
@@ -57,14 +61,16 @@ public class KeyboardFactory {
     }
 
     /**
-     * Меню раздела записей: Добавить / Выгрузить / Удалить
+     * Меню раздела записей: Добавить / Выгрузить / Удалить.
+     * Подпись кнопки добавления передается (для приемов — «Отметить прием»).
      */
-    public InlineKeyboardMarkup sectionMenu(CallbackAction add,
+    public InlineKeyboardMarkup sectionMenu(String addLabel,
+                                            CallbackAction add,
                                             CallbackAction export,
                                             CallbackAction delete) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_ADD, add.prefix())));
+        rows.add(List.of(inlineButton(addLabel, add.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_EXPORT, export.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_DELETE, delete.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, CallbackAction.MAIN_MENU_ACTION.prefix())));
@@ -180,13 +186,23 @@ public class KeyboardFactory {
     }
 
     /**
-     * Клавиатура шага анкеты: для optional-поля — «Пропустить», для булева — «Да/Нет».
-     * Когда оба флага false — вернуть null (ожидаем свободный текст без кнопок).
+     * Клавиатура шага анкеты:
+     * - для типов дат и времени — быстрые кнопки (Сегодня/Вчера/Завтра, Сейчас)
+     * - для булева — «Да/Нет»
+     * - для optional-поля дополнительно кнопка «Пропустить».
+     * Когда ничего из этого не подходит — вернуть null (ожидаем свободный текст без кнопок).
      */
-    public InlineKeyboardMarkup formStepKeyboard(boolean isOptional, boolean isBoolean) {
+    public InlineKeyboardMarkup formStepKeyboard(Class<?> type, boolean isOptional) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        if (isBoolean) {
+        if (type == LocalDate.class) {
+            rows.add(List.of(
+                    inlineButton(BotTexts.INLINE_BTN_WIZARD_TODAY, CallbackAction.WIZARD_QUICK_SET.prefix() + ":today"),
+                    inlineButton(BotTexts.INLINE_BTN_WIZARD_YESTERDAY, CallbackAction.WIZARD_QUICK_SET.prefix() + ":yesterday"),
+                    inlineButton(BotTexts.INLINE_BTN_WIZARD_TOMORROW, CallbackAction.WIZARD_QUICK_SET.prefix() + ":tomorrow")));
+        } else if (type == LocalDateTime.class || type == LocalTime.class) {
+            rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_WIZARD_NOW, CallbackAction.WIZARD_QUICK_SET.prefix() + ":now")));
+        } else if (isBoolean(type)) {
             rows.add(List.of(
                     inlineButton(BotTexts.INLINE_BTN_BOOL_YES, CallbackAction.WIZARD_BOOL_YES.prefix()),
                     inlineButton(BotTexts.INLINE_BTN_BOOL_NO, CallbackAction.WIZARD_BOOL_NO.prefix())));
@@ -214,6 +230,54 @@ public class KeyboardFactory {
                 inlineButton(BotTexts.INLINE_BTN_WIZARD_CANCEL, CallbackAction.WIZARD_CANCEL.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Флоу отметки приема — шаг «препарат»: кнопка на каждый активный курс
+     * (callback {@code intake.course:id}). Если курсов нет — возвращает null
+     * (ожидаем ручной ввод названия).
+     */
+    public InlineKeyboardMarkup intakeMedication(List<MedicationCourse> courses) {
+        if (courses.isEmpty()) {
+            return null;
+        }
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (MedicationCourse course : courses) {
+            rows.add(List.of(inlineButton(
+                    courseMedicationLabel(course),
+                    CallbackAction.INTAKE_COURSE.prefix() + ":" + course.getId())));
+        }
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Флоу отметки приема — шаг «дозы»: быстрые кнопки 1 / 2 и «Пропустить».
+     */
+    public InlineKeyboardMarkup intakeDoses() {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        rows.add(List.of(
+                inlineButton("1", CallbackAction.INTAKE_DOSES.prefix() + ":1"),
+                inlineButton("2", CallbackAction.INTAKE_DOSES.prefix() + ":2")));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_WIZARD_SKIP, CallbackAction.WIZARD_SKIP.prefix())));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    /**
+     * Флоу отметки приема — шаг «время»: кнопка «Сейчас».
+     */
+    public InlineKeyboardMarkup intakeTime() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(inlineButton(
+                        BotTexts.INTAKE_BTN_NOW, CallbackAction.INTAKE_TAKEN_AT.prefix()))))
+                .build();
+    }
+
+    private String courseMedicationLabel(MedicationCourse course) {
+        return course.getProperties().getMedication();
+    }
+
+    private boolean isBoolean(Class<?> type) {
+        return type == Boolean.class || type == boolean.class;
     }
 
     private InlineKeyboardButton inlineButton(String text, String callbackData) {

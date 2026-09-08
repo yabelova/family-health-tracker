@@ -2,7 +2,6 @@ package com.yabelova.healthtracker.telegram.command;
 
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
-import com.yabelova.healthtracker.telegram.support.ReplySender;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -20,13 +19,13 @@ import java.util.Set;
  * handlePendingText — обработка свободного текстового ввода, когда команда
  * ранее сообщила, что ожидает следующий текст.
  * <p>
- * Все handle возвращают маркер ожидания: если команда теперь ждёт следующий
+ * Все handle возвращают маркер ожидания: если команда теперь ждет следующий
  * свободный текстовый ввод или клик внутри того же флоу, она возвращает маркер,
  * под которым этот ввод будет различаться; иначе — null. Маркер — это либо
  * CallbackAction (вид флоу: какая кнопка его запустила), либо record с состоянием
  * флоу, которое нужно переносить между шагами (например, TransferChoice, ProfileGroups).
- * Команда сама знает своё состояние и шаги анкеты, диспетчер лишь хранит
- * возвращённый маркер и передаёт его обратно в следующий
+ * Команда сама знает свое состояние и шаги анкеты, диспетчер лишь хранит
+ * возвращенный маркер и передает его обратно в следующий
  * handlePendingText/handleCallback
  */
 public interface BotCommand {
@@ -48,20 +47,20 @@ public interface BotCommand {
     /**
      * Обработка нажатия reply-кнопки или slash-команды
      *
-     * @return null — не ждём следующий текст; не-null — маркер, под которым ждём
+     * @return null — не ждем следующий текст; не-null — маркер, под которым ждем
      */
-    default Object handleText(Update update, User user, ReplySender reply) {
+    default Object handleText(Update update, User user) {
         return null;
     }
 
     /**
-     * Обработка свободного текстового ввода под сохранённым маркером флоу.
+     * Обработка свободного текстового ввода под сохраненным маркером флоу.
      *
      * @param marker ярлык, под которым команда ранее заявила ожидание
      * @return null — анкета завершена, ожидание снимается; не-null — новый маркер,
      * под которым ожидание продолжится (например, следующий шаг анкеты)
      */
-    default Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
+    default Object handlePendingText(Update update, User user, Object marker) {
         return null;
     }
 
@@ -69,23 +68,23 @@ public interface BotCommand {
      * Обработка нажатия inline-кнопки. Переопределяется командами, которым
      * текущий шаг анкеты не важен (большинство команд).
      *
-     * @return null — не ждём следующий текст; не-null — маркер, под которым ждём
+     * @return null — не ждем следующий текст; не-null — маркер, под которым ждем
      */
-    default Object handleCallback(Update update, User user, ReplySender reply) {
+    default Object handleCallback(Update update, User user) {
         return null;
     }
 
     /**
      * Обработка нажатия inline-кнопки с маркером ожидания. Диспетчер всегда вызывает
-     * эту версию (маркер равен null, если ожидания нет); переопределять её стоит
+     * эту версию (маркер равен null, если ожидания нет); переопределять ее стоит
      * только если кнопка должна отличать «свежий» клик от клика внутри своего флоу.
      * По умолчанию игнорирует маркер и делегирует в
-     * {@link #handleCallback(Update, User, ReplySender)}.
+     * {@link #handleCallback(Update, User)}.
      *
      * @param marker маркер, под которым команда ранее заявила ожидание (может быть null)
-     * @return null — не ждём следующий текст; не-null — маркер, под которым ждём
+     * @return null — не ждем следующий текст; не-null — маркер, под которым ждем
      */
-    default Object handleCallback(Update update, User user, ReplySender reply, Object marker) {
-        return handleCallback(update, user, reply);
+    default Object handleCallback(Update update, User user, Object marker) {
+        return handleCallback(update, user);
     }
 }

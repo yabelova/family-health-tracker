@@ -3,6 +3,7 @@ package com.yabelova.healthtracker.telegram.support;
 /**
  * Все пользовательские тексты бота. Параметризованные строки содержат плейсхолдеры
  * {@code %s}; подстановка — {@link String#format(String, Object...)} по месту использования.
+ * Константы группировать и упорядочивать по флоу пользователя (вход → шаги → ошибки → подтверждение).
  */
 public final class BotTexts {
 
@@ -24,7 +25,7 @@ public final class BotTexts {
     public static final String INLINE_BTN_ADD_BY_CODE = "➕ Добавить по коду";
 
     // Меню профиля (навигация по разделам)
-    public static final String INLINE_BTN_MENU_TAKE = "💊 Принять лекарство";
+    public static final String INLINE_BTN_MENU_TAKE = "💊 Приём лекарства";
     public static final String INLINE_BTN_MENU_COURSE = "💊 Курсы лечения";
     public static final String INLINE_BTN_MENU_SYMPTOM = "📝 Симптомы";
     public static final String INLINE_BTN_MENU_MANAGE = "⚙️ Управление профилем";
@@ -34,6 +35,9 @@ public final class BotTexts {
     public static final String INLINE_BTN_SECTION_EXPORT = "📤 Выгрузить";
     public static final String INLINE_BTN_SECTION_DELETE = "🗑 Удалить";
     public static final String INLINE_BTN_SECTION_BACK = "↩️ Назад";
+
+    // Раздел приемов
+    public static final String INLINE_BTN_INTAKE_ADD = "💊 Отметить приём";
 
     // Управление профилем (меню владельца)
     public static final String INLINE_BTN_MENU_SHARE = "🔗 Поделиться профилем";
@@ -53,6 +57,10 @@ public final class BotTexts {
     public static final String INLINE_BTN_WIZARD_RETRY = "🔄 Начать заново";
     public static final String INLINE_BTN_WIZARD_CANCEL = "❌ Отменить";
     public static final String INLINE_BTN_WIZARD_SKIP = "⏭️ Пропустить";
+    public static final String INLINE_BTN_WIZARD_NOW = "🕐 Сейчас";
+    public static final String INLINE_BTN_WIZARD_TODAY = "📅 Сегодня";
+    public static final String INLINE_BTN_WIZARD_YESTERDAY = "📅 Вчера";
+    public static final String INLINE_BTN_WIZARD_TOMORROW = "📅 Завтра";
     public static final String INLINE_BTN_BOOL_YES = "Да";
     public static final String INLINE_BTN_BOOL_NO = "Нет";
 
@@ -126,7 +134,11 @@ public final class BotTexts {
 
     public static final String PROFILE_MENU_TITLE = "👤 Выбранный профиль: %s\n\nВыберите действие:";
 
-    // ===== РАЗДЕЛЫ ЗАПИСЕЙ (симптомы / курсы лечения) =====
+    // ===== ШАПКА РАЗДЕЛОВ =====
+
+    public static final String SECTION_PROFILE_HEADER = "👤 Профиль: %s";
+
+    // ===== РАЗДЕЛЫ ЗАПИСЕЙ (симптомы / курсы лечения / приемы) =====
 
     public static final String SYMPTOM_SAVED = "✅ Симптом записан!";
     public static final String SYMPTOM_CANCELLED = "📝 Запись симптома отменена";
@@ -137,6 +149,36 @@ public final class BotTexts {
     public static final String MEDICATION_COURSE_CANCELLED = "📝 Добавление курса отменено";
     public static final String MEDICATION_COURSE_SECTION_TITLE = "💊 Курсы лечения\n\nВыберите действие:";
     public static final String MEDICATION_COURSE_EXPORT_EMPTY = "Курсов лечения пока нет";
+
+    // Приемы лекарств
+    public static final String INTAKE_SAVED = "✅ Приём сохранён!";
+    public static final String INTAKE_CANCELLED = "📝 Отметка приёма отменена";
+    public static final String INTAKE_SECTION_TITLE = "💊 Приёмы лекарств\n\nВыберите действие:";
+    public static final String INTAKE_EXPORT_EMPTY = "За последние 7 дней приёмов не отмечено";
+    public static final String INTAKE_TODAY_HEAD = "Сегодня принято:\n%s";
+    public static final String INTAKE_TODAY_LINE = "• 💊 %s (%s) — %d доз.";
+
+    // Флоу отметки приема
+    public static final String INTAKE_STEP_MEDICATION_PROMPT = """
+            Выберите препарат из активных курсов или введите название вручную:""";
+    public static final String INTAKE_STEP_MEDICATION_NO_COURSES = "Активных курсов нет — введите название препарата:";
+    public static final String INTAKE_STEP_MEDICATION_INVALID = "⚠️ Название препарата не может быть пустым. Введите название:";
+    public static final String INTAKE_COURSE_NOT_FOUND = "⚠️ Курс не найден. Выберите препарат заново:";
+    public static final String INTAKE_STEP_DOSES_PROMPT = """
+            Сколько доз принято?
+
+            Воспользуйтесь кнопками или введите число вручную:""";
+    public static final String INTAKE_STEP_TAKEN_AT_PROMPT = """
+            Когда приняли?
+
+            Воспользуйтесь кнопками или введите время вручную:
+            • ЧЧ:ММ — время сегодня (например, 14:30)
+            • ДД.ММ ЧЧ:ММ — дата в этом году и время (например, 05.09 21:00)
+            • ДД.ММ.ГГГГ ЧЧ:ММ — дата и время с годом (например, 30.12.2025 21:00)
+            • ДД.ММ / ДД.ММ.ГГГГ — дата без времени, начало суток (например, 30.12)""";
+    public static final String INTAKE_BTN_NOW = "🕐 Сейчас";
+    public static final String INTAKE_INVALID_INPUT = "⚠️ Неверный ввод. Попробуйте ещё раз:";
+    public static final String INTAKE_CONFIRM_TEXT = "📋 Проверьте данные приёма:\n\n%s\n\nПодтверждаете?";
 
     public static final String EXPORT_HEAD = "📤 Записи профиля %s:";
     public static final String DELETE_RECORDS_EMPTY = "Записей для удаления нет";

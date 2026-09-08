@@ -1,0 +1,25 @@
+package com.yabelova.healthtracker.repository;
+
+import com.yabelova.healthtracker.domain.MedicationIntake;
+import org.springframework.data.jdbc.repository.query.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Repository
+@SuppressWarnings("NullableProblems")
+public interface MedicationIntakeRepository extends CrudRepository<MedicationIntake, Integer> {
+
+    List<MedicationIntake> findByProfileId(Integer profileId);
+
+    @Query("""
+                SELECT * FROM t_medication_intakes
+                WHERE profile_id = :profileId
+                  AND (properties ->> 'takenAt')::timestamp >= :since
+            """)
+    List<MedicationIntake> findByProfileIdAndTakenAtSince(@Param("profileId") Integer profileId,
+                                                          @Param("since") LocalDateTime since);
+}

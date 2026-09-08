@@ -22,8 +22,9 @@ public class ProfileSelectionScreen {
 
     private final ProfileService profileService;
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
-    public void render(User user, ReplySender reply) {
+    public void render(User user) {
         List<Profile> profiles = profileService.getProfiles(user);
 
         String text = profiles.isEmpty()

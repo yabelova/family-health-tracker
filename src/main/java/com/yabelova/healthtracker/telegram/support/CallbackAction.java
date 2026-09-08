@@ -13,7 +13,7 @@ public enum CallbackAction {
     // Навигация (главное меню разделов)
     MAIN_MENU_ACTION("menu.main"),
 
-    // Курсы приёма лекарств (раздел)
+    // Курсы приема лекарств (раздел)
     MEDICATION_COURSE("medication.course"),
     MEDICATION_ADD("medication.add"),
     MEDICATION_EXPORT("medication.export"),
@@ -26,6 +26,18 @@ public enum CallbackAction {
     SYMPTOM_EXPORT("symptom.export"),
     SYMPTOM_DELETE("symptom.delete"),
     SYMPTOM_DELETE_SELECTED("symptom.delete.selected"),
+
+    // Приемы лекарств (раздел)
+    INTAKE_LOG("intake.log"),
+    INTAKE_ADD("intake.add"),
+    INTAKE_EXPORT("intake.export"),
+    INTAKE_DELETE("intake.delete"),
+    INTAKE_DELETE_SELECTED("intake.delete.selected"),
+
+    // Приемы лекарств (флоу отметки)
+    INTAKE_COURSE("intake.course"),
+    INTAKE_DOSES("intake.doses"),
+    INTAKE_TAKEN_AT("intake.taken-at"),
 
     // Профиль — управление (меню владельца)
     PROFILE_MANAGE("profile.manage"),
@@ -48,6 +60,7 @@ public enum CallbackAction {
     WIZARD_BOOL_YES("wizard.bool.yes"),
     WIZARD_BOOL_NO("wizard.bool.no"),
     WIZARD_SKIP("wizard.skip"),
+    WIZARD_QUICK_SET("wizard.quick.set"),
     WIZARD_CONFIRM("wizard.confirm"),
     WIZARD_RETRY("wizard.retry"),
     WIZARD_CANCEL("wizard.cancel");
@@ -55,7 +68,8 @@ public enum CallbackAction {
     private final String prefix;
 
     private static final Set<CallbackAction> WIZARD_ACTIONS = EnumSet.of(
-            WIZARD_CONFIRM, WIZARD_RETRY, WIZARD_CANCEL, WIZARD_SKIP, WIZARD_BOOL_YES, WIZARD_BOOL_NO
+            WIZARD_CONFIRM, WIZARD_RETRY, WIZARD_CANCEL, WIZARD_SKIP, WIZARD_QUICK_SET,
+            WIZARD_BOOL_YES, WIZARD_BOOL_NO
     );
 
     CallbackAction(String prefix) {
@@ -67,7 +81,7 @@ public enum CallbackAction {
     }
 
     /**
-     * true для универсальных кнопок визарда (confirm/retry/cancel/skip/bool_yes/bool_no),
+     * true для универсальных кнопок визарда (confirm/retry/cancel/skip/quick/bool_yes/bool_no),
      * которые маршрутизируются в команду, ожидающую ввод.
      */
     public boolean isWizardAction() {
@@ -75,7 +89,7 @@ public enum CallbackAction {
     }
 
     /**
-     * Распознаёт действие по строке callback кнопки (например "profile.activate:1"),
+     * Распознает действие по строке callback кнопки (например "profile.activate:1"),
      * отбрасывая payload (часть после двоеточия). Возвращает null, если префикс не распознан.
      */
     public static CallbackAction fromData(String data) {

@@ -13,9 +13,9 @@ import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ParticipantName;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
+import com.yabelova.healthtracker.util.Numbers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -29,6 +29,7 @@ public class ProfileManageCommand implements BotCommand {
     private final ProfileService profileService;
     private final ProfileSelectionScreen profileSelectionScreen;
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
     @Override
     public Set<CallbackAction> callbackActions() {
@@ -44,27 +45,25 @@ public class ProfileManageCommand implements BotCommand {
     }
 
     @Override
-    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
+    public Object handlePendingText(Update update, User user, Object marker) {
         if (marker instanceof TransferChoice choice) {
-            return handleTransferConfirmation(update, user, reply, choice);
+            return handleTransferConfirmation(update, user, choice);
         }
         if (!(marker instanceof CallbackAction action)) {
             return null;
         }
         return switch (action) {
-            case PROFILE_DELETE -> handleDeleteConfirmation(update, user, reply, marker);
-            case PROFILE_RENAME -> handleRename(update, user, reply, marker);
+            case PROFILE_DELETE -> handleDeleteConfirmation(update, user, marker);
+            case PROFILE_RENAME -> handleRename(update, user, marker);
             default -> null;
         };
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply) {
+    public Object handleCallback(Update update, User user) {
         String data = update.getCallbackQuery().getData();
         CallbackAction action = CallbackAction.fromData(data);
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .build());
+        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
@@ -78,7 +77,7 @@ public class ProfileManageCommand implements BotCommand {
         try {
             switch (action) {
                 case PROFILE_MANAGE -> {
-                    renderManage(user, profile, reply);
+                    renderManage(user, profile);
                     return null;
                 }
 
@@ -91,20 +90,20 @@ public class ProfileManageCommand implements BotCommand {
                 }
 
                 case PROFILE_SHARE -> {
-                    return handleShare(user, profile, reply);
+                    return handleShare(user, profile);
                 }
 
                 case PROFILE_REVOKE -> {
-                    return handleRevoke(user, profile, reply);
+                    return handleRevoke(user, profile);
                 }
 
                 case PROFILE_TRANSFER -> {
-                    renderTransferChoice(user, profile, reply);
+                    renderTransferChoice(user, profile);
                     return null;
                 }
 
                 case PROFILE_TRANSFER_OWNERSHIP -> {
-                    return handleTransferChoice(data, user, profile, reply);
+                    return handleTransferChoice(data, user, profile);
                 }
 
                 case PROFILE_DELETE -> {
@@ -131,7 +130,7 @@ public class ProfileManageCommand implements BotCommand {
         }
     }
 
-    private Object handleRename(Update update, User user, ReplySender reply, Object marker) {
+    private Object handleRename(Update update, User user, Object marker) {
         String name = update.getMessage().getText().trim();
 
         if (name.isEmpty()) {
@@ -168,11 +167,11 @@ public class ProfileManageCommand implements BotCommand {
                 .parseMode("HTML")
                 .build());
 
-        renderManage(user, profile, reply);
+        renderManage(user, profile);
         return null;
     }
 
-    private Object handleTransferConfirmation(Update update, User user, ReplySender reply, TransferChoice choice) {
+    private Object handleTransferConfirmation(Update update, User user, TransferChoice choice) {
         String raw = update.getMessage().getText().trim();
 
         if (!raw.equalsIgnoreCase(ConfirmationWords.TRANSFER)) {
@@ -182,7 +181,7 @@ public class ProfileManageCommand implements BotCommand {
                     .text(BotTexts.TRANSFER_CANCELLED)
                     .build());
             if (profile != null) {
-                renderManage(user, profile, reply);
+                renderManage(user, profile);
             }
             return null;
         }
@@ -202,11 +201,11 @@ public class ProfileManageCommand implements BotCommand {
                 .chatId(user.getId().toString())
                 .text(BotTexts.TRANSFER_SUCCESS)
                 .build());
-        profileSelectionScreen.render(user, reply);
+        profileSelectionScreen.render(user);
         return null;
     }
 
-    private Object handleDeleteConfirmation(Update update, User user, ReplySender reply, Object marker) {
+    private Object handleDeleteConfirmation(Update update, User user, Object marker) {
         String raw = update.getMessage().getText().trim();
 
         if (raw.isEmpty()) {
@@ -241,7 +240,7 @@ public class ProfileManageCommand implements BotCommand {
                     .text(BotTexts.DELETE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())))
                     .parseMode("HTML")
                     .build());
-            profileSelectionScreen.render(user, reply);
+            profileSelectionScreen.render(user);
             return null;
         }
 
@@ -249,12 +248,12 @@ public class ProfileManageCommand implements BotCommand {
                 .chatId(user.getId().toString())
                 .text(BotTexts.DELETE_CANCELLED)
                 .build());
-        renderManage(user, profile, reply);
+        renderManage(user, profile);
         return null;
     }
 
 
-    private void renderManage(User user, Profile profile, ReplySender reply) {
+    private void renderManage(User user, Profile profile) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(BotTexts.MANAGE_MENU_HEAD.formatted(HtmlUtils.bold(profile.getName())))
@@ -263,7 +262,7 @@ public class ProfileManageCommand implements BotCommand {
                 .build());
     }
 
-    private Object handleShare(User user, Profile profile, ReplySender reply) {
+    private Object handleShare(User user, Profile profile) {
         String code = profileService.createInvite(user, profile.getId());
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
@@ -271,21 +270,21 @@ public class ProfileManageCommand implements BotCommand {
                         HtmlUtils.bold(profile.getName()), HtmlUtils.bold(code)))
                 .parseMode("HTML")
                 .build());
-        renderManage(user, profile, reply);
+        renderManage(user, profile);
         return null;
     }
 
-    private Object handleRevoke(User user, Profile profile, ReplySender reply) {
+    private Object handleRevoke(User user, Profile profile) {
         profileService.revokeAccess(user, profile.getId());
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(BotTexts.REVOKE_SUCCESS)
                 .build());
-        renderManage(user, profile, reply);
+        renderManage(user, profile);
         return null;
     }
 
-    private void renderTransferChoice(User user, Profile profile, ReplySender reply) {
+    private void renderTransferChoice(User user, Profile profile) {
         List<ProfileParticipant> participants = profileService.participants(profile.getId());
         if (participants.isEmpty()) {
             reply.send(SendMessage.builder()
@@ -293,7 +292,7 @@ public class ProfileManageCommand implements BotCommand {
                     .text(BotTexts.TRANSFER_NO_PARTICIPANTS.formatted(HtmlUtils.bold(profile.getName())))
                     .parseMode("HTML")
                     .build());
-            renderManage(user, profile, reply);
+            renderManage(user, profile);
             return;
         }
         reply.send(SendMessage.builder()
@@ -305,12 +304,12 @@ public class ProfileManageCommand implements BotCommand {
                 .build());
     }
 
-    private Object handleTransferChoice(String data, User user, Profile profile, ReplySender reply) {
+    private Object handleTransferChoice(String data, User user, Profile profile) {
         String[] payload = data.split(":", 3);
         if (payload.length < 3) {
             return null;
         }
-        Long targetUserId = parseLongId(payload[2]);
+        Long targetUserId = Numbers.parseLong(payload[2]);
         if (targetUserId == null) {
             return null;
         }
@@ -328,14 +327,6 @@ public class ProfileManageCommand implements BotCommand {
                 .parseMode("HTML")
                 .build());
         return new TransferChoice(profile.getId(), targetUserId);
-    }
-
-    private Long parseLongId(String raw) {
-        try {
-            return Long.valueOf(raw);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     /**

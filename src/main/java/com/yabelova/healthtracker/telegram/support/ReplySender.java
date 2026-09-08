@@ -3,6 +3,7 @@ package com.yabelova.healthtracker.telegram.support;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -28,6 +29,20 @@ public class ReplySender {
         } catch (TelegramApiException e) {
             log.error("Ошибка отправки Telegram-метода {}: ", method.getClass().getSimpleName(), e);
         }
+    }
+
+    public void answerCallbackQuery(String callbackQueryId) {
+        send(AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackQueryId)
+                .build());
+    }
+
+    public void answerCallbackQuery(String callbackQueryId, String text) {
+        send(AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackQueryId)
+                .text(text)
+                .showAlert(false)
+                .build());
     }
 
     public void removeKeyboard(Long chatId, Integer messageId) {

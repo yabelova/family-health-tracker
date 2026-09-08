@@ -17,9 +17,9 @@ import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ParticipantName;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
+import com.yabelova.healthtracker.util.Numbers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -34,6 +34,7 @@ public class DataPrivacyCommand implements BotCommand {
 
     private final DataPrivacyService dataPrivacyService;
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
     /**
      * Состояние флоу удаления: снимок групп профилей + накапливаемые решения.
@@ -52,18 +53,18 @@ public class DataPrivacyCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(BotTexts.DELETE_ALL_WARNING)
                 .build());
 
         ProfileGroups profileGroups = dataPrivacyService.getAndGroupProfiles(user);
-        return continueFlow(user, new DeleteFlow(profileGroups, List.of()), reply);
+        return continueFlow(user, new DeleteFlow(profileGroups, List.of()));
     }
 
     @Override
-    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
+    public Object handlePendingText(Update update, User user, Object marker) {
         DeleteFlow flow = marker instanceof DeleteFlow existing ? existing : null;
         String raw = update.getMessage().getText().trim();
 
@@ -101,14 +102,10 @@ public class DataPrivacyCommand implements BotCommand {
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply, Object marker) {
+    public Object handleCallback(Update update, User user, Object marker) {
         String data = update.getCallbackQuery().getData();
         CallbackAction action = CallbackAction.fromData(data);
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .text(BotTexts.DELETE_ALL_ANSWER)
-                .showAlert(false)
-                .build());
+        reply.answerCallbackQuery(update.getCallbackQuery().getId(), BotTexts.DELETE_ALL_ANSWER);
 
         if (!(marker instanceof DeleteFlow flow)) {
             return null;
@@ -118,14 +115,14 @@ public class DataPrivacyCommand implements BotCommand {
         if (payload.length < 2) {
             return flow;
         }
-        Integer profileId = parseId(payload[1]);
+        Integer profileId = Numbers.parseInt(payload[1]);
         if (profileId == null) {
             return flow;
         }
 
         List<PrivacyDecision> decisions = new ArrayList<>(flow.decisions());
         if (action == CallbackAction.PRIVACY_TRANSFER && payload.length >= 3) {
-            Long targetUserId = parseLongId(payload[2]);
+            Long targetUserId = Numbers.parseLong(payload[2]);
             if (targetUserId != null) {
                 decisions.add(new PrivacyDecision(profileId, Decision.TRANSFER, targetUserId));
             }
@@ -133,13 +130,13 @@ public class DataPrivacyCommand implements BotCommand {
             decisions.add(new PrivacyDecision(profileId, Decision.REVOKE, null));
         }
 
-        return continueFlow(user, new DeleteFlow(flow.profileGroups(), decisions), reply);
+        return continueFlow(user, new DeleteFlow(flow.profileGroups(), decisions));
     }
 
     /**
-     * Показываем следующий нерешённый общий профиль, либо финальную сводку со словом подтверждения.
+     * Показываем следующий нерешенный общий профиль, либо финальную сводку со словом подтверждения.
      */
-    private Object continueFlow(User user, DeleteFlow flow, ReplySender reply) {
+    private Object continueFlow(User user, DeleteFlow flow) {
         Optional<OwnerShared> next = nextUndecided(flow);
 
         if (next.isEmpty()) {
@@ -221,21 +218,5 @@ public class DataPrivacyCommand implements BotCommand {
                 .append("\n\n")
                 .append(BotTexts.DELETE_ALL_ERROR_MENU);
         return sb.toString();
-    }
-
-    private Integer parseId(String raw) {
-        try {
-            return Integer.valueOf(raw);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private Long parseLongId(String raw) {
-        try {
-            return Long.valueOf(raw);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }

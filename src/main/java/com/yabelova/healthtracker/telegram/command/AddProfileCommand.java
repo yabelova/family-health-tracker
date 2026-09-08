@@ -11,7 +11,6 @@ import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -23,6 +22,7 @@ public class AddProfileCommand implements BotCommand {
 
     private final ProfileService profileService;
     private final ProfileSelectionScreen profileSelectionScreen;
+    private final ReplySender reply;
 
     @Override
     public Set<CallbackAction> callbackActions() {
@@ -30,7 +30,7 @@ public class AddProfileCommand implements BotCommand {
     }
 
     @Override
-    public Object handlePendingText(Update update, User user, ReplySender reply, Object marker) {
+    public Object handlePendingText(Update update, User user, Object marker) {
         String raw = update.getMessage().getText();
 
         if (raw == null || raw.trim().isEmpty()) {
@@ -50,7 +50,7 @@ public class AddProfileCommand implements BotCommand {
                     .parseMode("HTML")
                     .build());
 
-            profileSelectionScreen.render(user, reply);
+            profileSelectionScreen.render(user);
             return null;
 
         } catch (ProfileOperationException e) {
@@ -63,10 +63,8 @@ public class AddProfileCommand implements BotCommand {
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply) {
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .build());
+    public Object handleCallback(Update update, User user) {
+        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())

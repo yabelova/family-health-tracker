@@ -4,6 +4,7 @@ import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.Commands;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -11,7 +12,10 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class HelpCommand implements BotCommand {
+
+    private final ReplySender reply;
 
     @Override
     public Set<String> textKeys() {
@@ -19,7 +23,7 @@ public class HelpCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(BotTexts.HELP)

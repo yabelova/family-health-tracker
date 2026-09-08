@@ -5,7 +5,7 @@ Telegram-бот для контроля планов лечения и учёт�
 
 ## Стек
 
-Java 25, Spring Boot, Spring Data JDBC, PostgreSQL, Flyway, TelegramBots.
+Java 25, Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBots, Lombok.
 
 ## Запуск
 
@@ -26,15 +26,21 @@ Java 25, Spring Boot, Spring Data JDBC, PostgreSQL, Flyway, TelegramBots.
   атомарно одной транзакцией.
 * Удаление профиля владельцем возможно только если в нём нет других участников; общие профили сначала
   передаются другому участнику либо доступ отзывается.
+* **Права на записи:** любой участник профиля может добавлять/удалять/выгружать записи (симптомы, курсы, приёмы);
+  действия с самим профилем (шеринг, передача владения, удаление) — только владелец. Доступ проверяется
+  в момент операции (гард `ProfileAccessGuard`), при отзыве прав во время анкеты пользователь получает
+  уведомление и возвращается на экран выбора профиля.
 
 ## Архитектура
 
 Проект разделён на четыре слоя:
 
-* **domain** — сущности предметной области (`Profile`, `User`, `UserRole`).
+* **domain** — сущности предметной области (`Profile`, `User`, `UserRole`, `ProfileInvite`,
+  `MedicationCourse`, `SymptomLog`, `MedicationIntake`).
 * **repository** — доступ к данным (Spring Data JDBC), Flyway-миграции.
 * **service** — бизнес-логика, Telegram-free и юнит-тестируемая
-  (`UserService`, `ProfileService`, `NotificationService`).
+  (`UserService`, `ProfileService`, `NotificationService`, `SymptomService`, `MedicationCourseService`,
+  `IntakeService`, `ProfileAccessGuard`).
 * **telegram** — UI-слой бота. Общается только с сервисами (не с репозиториями):
   * `HealthTrackerBot` — тонкий: получает `Update` и передаёт в диспетчер.
   * `BotDispatcher` — маршрутизирует ввод к командам по явным ключам (детерминированно);
@@ -42,6 +48,12 @@ Java 25, Spring Boot, Spring Data JDBC, PostgreSQL, Flyway, TelegramBots.
   * `command/*` — команды. Каждая команда: `StartCommand`, `SelectProfileCommand`,
     `CreateProfileCommand`, `AddProfileCommand`, `ProfileMenuCommand`, `ProfileManageCommand`,
     `NotificationsCommand`, `DataPrivacyCommand` (`/delete_all_data`), `HelpCommand` (`/help`).
+  * `command/section/*` — разделы записей (симптомы, курсы, приёмы) на общей основе `AbstractSectionCommand`:
+    меню раздела, выгрузка, удаление по id. Шапка «Профиль: имя» во всех разделах.
+  * `command/wizard/*` — визарды анкет (симптом, курс): `AbstractWizardCommand` строит шаги рефлексией
+    из класса свойств, шаги подтверждаются/отменяются кнопками.
+  * `command/intake/*` — флоу отметки приёма (не визард): `IntakeTakeCommand` + `IntakeFlowMarker`.
+    Шаги: препарат (кнопки активных курсов или ручной ввод) → дозы → время → подтверждение.
   * `screen/*` — переиспользуемые экраны (меню профиля, выбор профиля, уведомления).
   * `support/ReplySender` — единственная точка отправки ответов в Telegram.
   * `support/KeyboardFactory` — построение reply- и inline-клавиатур.
@@ -52,10 +64,13 @@ Java 25, Spring Boot, Spring Data JDBC, PostgreSQL, Flyway, TelegramBots.
 ### Паттерны
 
 * **Command** — каждый вход (команда/кнопка) обрабатывается отдельным классом `BotCommand`;
+  диспетчер хранит их в мап по ключу ввода — текст команды либо callback-действие
+  (`BotDispatcher`) — и вызывает по ключу;
   методы интерфейса — no-op по умолчанию (ISP): команда реализует только используемые.
 * **State** — текущее состояние диалога хранится в памяти (`BotDispatcher.awaitingInput`),
   экран (меню профиля / выбор профиля) выводится из доменного контекста (`active_profile_id`).
-* **Builder** — построение клавиатур и ответов через встроенные builder'ы Telegram API.
+* **Builder** — построение клавиатур и ответов через встроенные builder'ы Telegram API;
+  сборка сущностей/DTO — средствами Lombok (`@Builder`).
 
 ## Карта переходов (стейт-машина)
 
@@ -75,9 +90,25 @@ Reply-панель (2×2) фиксированная: «Меню профиля�
    │  inline: profile.add        ──► ввод кода ──► claimInvite ──► связь MEMBER, is_active=false ──► (этот же экран)
 
 [МЕНЮ ПРОФИЛЯ]               (reply-панель 2×2)
-   │  inline-действия (каркас): 💊 Принять / 📋 План / 📝 Симптом
    │  inline: profile.manage   ──► [УПРАВЛЕНИЕ ПРОФИЛЕМ] (кнопка только у владельца)
+   │  inline: symptom.log / medication.course / intake.log ──► [РАЗДЕЛ ЗАПИСЕЙ] (любой участник профиля)
    │  (без профиля)             ──► переход в [ВЫБОР ПРОФИЛЯ]
+
+[РАЗДЕЛ ЗАПИСЕЙ]             (симптомы / курсы / приёмы)
+   │  inline: *.add        ──► визард анкеты (шаги → подтвердить/отменить) ──► [РАЗДЕЛ ЗАПИСЕЙ]
+   │  inline: intake.add   ──► флоу отметки приёма (см. ниже) ──► [РАЗДЕЛ ЗАПИСЕЙ]
+   │  inline: *.export     ──► выгрузка: симптомы — за 7 дней; курсы — весь список + остаток доз;
+   │                          приёмы — за 7 дней по дате приёма
+   │  inline: *.delete     ──► список записей кнопками по id ──► *.delete.selected:<id> ──► перерисовать список
+   │  inline: *.back       ──► [МЕНЮ ПРОФИЛЯ]
+   │  (доступ отозван)     ──► «К профилю нет доступа» ──► [ВЫБОР ПРОФИЛЯ]
+
+[ФЛОУ ОТМЕТКИ ПРИЁМА]        (intake.add; состояние — IntakeFlowMarker)
+   │  шаг 1 препарат — кнопки активных курсов (intake.course:<id>) или ручной ввод названия
+   │  шаг 2 дозы — кнопки 1/2/«Пропустить» (1) или число
+   │  шаг 3 время — «Сейчас» или ЧЧ:ММ / ДД.ММ ЧЧ:ММ
+   │  шаг 4 подтверждение — wizard.confirm ──► сохранение (course_id + имя в properties) ──► [РАЗДЕЛ ЗАПИСЕЙ]
+   │  wizard.retry ──► шаг 1; wizard.cancel ──► отмена ──► [РАЗДЕЛ ЗАПИСЕЙ]
 
 [УПРАВЛЕНИЕ ПРОФИЛЕМ]         (только владелец; навигация — reply-панель 2×2)
    │  inline: profile.share    ──► создать код (8 симв., 72 ч, одноразовый) ──► показать ──► (этот же экран)
@@ -122,5 +153,8 @@ callback) сразу снимает ожидание — флоу «умирае
 | `t_profiles` | профили (подопечные) |
 | `tr_user_profile` | связь пользователь ↔ профиль (роль OWNER/MEMBER, `is_active` — активный профиль; уникальный частичный индекс гарантирует один активный на пользователя) |
 | `t_profile_invites` | одноразовые коды приглашений (8 символов, TTL 72 ч, атомарный claim в `claimInvite`) |
+| `t_symptom_logs` | записи симптомов (jsonb `properties`: название, комментарий, `symptomTime`; недельная выгрузка — по `symptomTime`, по умолчанию `now`) |
+| `t_medication_courses` | курсы лечения (jsonb `properties`, `remaining_doses` — остаток для списания при приёме) |
+| `t_medication_intakes` | приёмы лекарств (jsonb `properties`: препарат, `takenAt`, дозы; выборка за день/неделю — по `takenAt`, по умолчанию `now`; `course_id` — справочно, обнуляется при удалении курса через `ON DELETE SET NULL`; списание остатка — шаг 3 Недели 4) |
 
 Миграции: `src/main/resources/db/migration`.

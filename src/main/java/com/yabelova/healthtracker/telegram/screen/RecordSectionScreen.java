@@ -20,10 +20,11 @@ import java.util.List;
 public class RecordSectionScreen {
 
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
     public void renderSection(User user,
-                              ReplySender reply,
                               String title,
+                              String addLabel,
                               CallbackAction add,
                               CallbackAction export,
                               CallbackAction delete) {
@@ -31,11 +32,11 @@ public class RecordSectionScreen {
                 .chatId(user.getId().toString())
                 .text(title)
                 .parseMode("HTML")
-                .replyMarkup(keyboard.sectionMenu(add, export, delete))
+                .replyMarkup(keyboard.sectionMenu(addLabel, add, export, delete))
                 .build());
     }
 
-    public void renderExport(User user, ReplySender reply, String text, CallbackAction backAction) {
+    public void renderExport(User user, String text, CallbackAction backAction) {
         reply.send(SendMessage.builder()
                 .chatId(user.getId().toString())
                 .text(text)
@@ -45,7 +46,6 @@ public class RecordSectionScreen {
     }
 
     public void renderDeleteList(User user,
-                                 ReplySender reply,
                                  String head,
                                  List<RecordDeleteOption> options,
                                  CallbackAction deleteSelected,

@@ -8,7 +8,6 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -20,6 +19,7 @@ public class ProfileMenuCommand implements BotCommand {
 
     private final ProfileMenuScreen profileMenuScreen;
     private final ProfileSelectionScreen profileSelectionScreen;
+    private final ReplySender reply;
 
     @Override
     public Set<String> textKeys() {
@@ -32,25 +32,23 @@ public class ProfileMenuCommand implements BotCommand {
     }
 
     @Override
-    public Object handleText(Update update, User user, ReplySender reply) {
+    public Object handleText(Update update, User user) {
         if (user.getActiveProfileId() == null) {
             reply.send(SendMessage.builder()
                     .chatId(user.getId().toString())
                     .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
                     .build());
-            profileSelectionScreen.render(user, reply);
+            profileSelectionScreen.render(user);
             return null;
         }
-        profileMenuScreen.render(user, reply);
+        profileMenuScreen.render(user);
         return null;
     }
 
     @Override
-    public Object handleCallback(Update update, User user, ReplySender reply) {
-        reply.send(AnswerCallbackQuery.builder()
-                .callbackQueryId(update.getCallbackQuery().getId())
-                .build());
-        profileMenuScreen.render(user, reply);
+    public Object handleCallback(Update update, User user) {
+        reply.answerCallbackQuery(update.getCallbackQuery().getId());
+        profileMenuScreen.render(user);
         return null;
     }
 }

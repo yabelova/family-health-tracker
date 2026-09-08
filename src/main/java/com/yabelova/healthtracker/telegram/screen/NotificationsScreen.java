@@ -17,8 +17,9 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 public class NotificationsScreen {
 
     private final KeyboardFactory keyboard;
+    private final ReplySender reply;
 
-    public void render(User user, ReplySender reply) {
+    public void render(User user) {
         String time = user.getNotificationTime() != null
                 ? user.getNotificationTime().toString()
                 : BotTexts.NOTIFICATIONS_TIME_UNSET;

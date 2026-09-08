@@ -13,6 +13,6 @@ public class SymptomLogProperties {
     @WizardField(label = "Описание симптома", order = 1)
     private String description;
 
-    @WizardField(label = "Дата и время симптома", order = 2, optional = true)
+    @WizardField(label = "Дата и время симптома", order = 2)
     private LocalDateTime symptomTime;
 }

@@ -34,7 +34,7 @@ public class DataPrivacyService {
     public enum Decision {TRANSFER, REVOKE}
 
     /**
-     * Группы профилей пользователя при расчёте плана удаления:
+     * Группы профилей пользователя при расчете плана удаления:
      * личные (удаляются), где участник (снимается связь) и общие-owner (нужно решение)
      */
     public record ProfileGroups(List<Profile> personal, List<Profile> member, List<OwnerShared> ownerShared) {

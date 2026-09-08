@@ -8,6 +8,7 @@ import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ReplySender;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,8 +23,9 @@ public class SymptomWizardCommand extends AbstractWizardCommand<SymptomLogProper
                                 KeyboardFactory keyboard,
                                 ProfileSelectionScreen profileSelectionScreen,
                                 SymptomService symptomService,
-                                SymptomSectionCommand sectionCommand) {
-        super(profileService, keyboard, sectionCommand, profileSelectionScreen);
+                                SymptomSectionCommand sectionCommand,
+                                ReplySender reply) {
+        super(profileService, keyboard, sectionCommand, profileSelectionScreen, reply);
         this.symptomService = symptomService;
     }
 

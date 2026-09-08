@@ -62,7 +62,7 @@ public class BotDispatcher {
         BotCommand active = route.command();
 
         if (route.kind() == RouteKind.CALLBACK) {
-            // удаляем клавиатуру сообщения, с которого пришёл клик — кнопки одноразовые
+            // удаляем клавиатуру сообщения, с которого пришел клик — кнопки одноразовые
             var message = update.getCallbackQuery().getMessage();
             if (message != null) {
                 reply.removeKeyboard(input.chatId(), message.getMessageId());
@@ -72,9 +72,9 @@ public class BotDispatcher {
         Object next;
         try {
             next = switch (route.kind()) {
-                case CALLBACK -> active.handleCallback(update, user, reply, route.marker());
-                case REPLY -> active.handleText(update, user, reply);
-                case PENDING -> active.handlePendingText(update, user, reply, route.marker());
+                case CALLBACK -> active.handleCallback(update, user, route.marker());
+                case REPLY -> active.handleText(update, user);
+                case PENDING -> active.handlePendingText(update, user, route.marker());
                 case NONE -> null;
             };
         } catch (RecordOperationException e) {
@@ -143,7 +143,7 @@ public class BotDispatcher {
         CallbackAction action = CallbackAction.fromData(data);
         AwaitingRequest pending = awaitingInput.get(chatId);
 
-        // Универсальная кнопка визарда: идет в команду, ожидающую ввод; без ожидания — устаревший клик.
+        // Универсальная кнопка визарда: идет в команду, ожидающую ввод; без ожидания — устаревший клик
         if (action != null && action.isWizardAction()) {
             if (pending != null) {
                 return Route.callback(pending.command(), pending.marker());
@@ -151,13 +151,13 @@ public class BotDispatcher {
             return unroutable(chatId, "Устаревший wizard-клик [" + data + "]");
         }
 
-        // Обычная кнопка: незнакомое действие или нет команды — «нет такой команды».
+        // Обычная кнопка: незнакомое действие или нет команды — «нет такой команды»
         BotCommand callbackCmd = action != null ? callbackCommands.get(action) : null;
         if (callbackCmd == null) {
             replyUnexpected(chatId);
             return unroutable(chatId, "Неизвестное callback-действие [" + data + "]");
         }
-        // Клик по чужой команде снимает текущее ожидание (одно ожидание на чат).
+        // Клик по чужой команде снимает текущее ожидание (одно ожидание на чат)
         if (pending != null && pending.command() != callbackCmd) {
             awaitingInput.remove(chatId);
             pending = null;
@@ -168,20 +168,20 @@ public class BotDispatcher {
     private Route routeText(Update update, Long chatId) {
         String text = textOf(update);
 
-        // Текст — команда меню: сразу REPLY, ожидание снимается.
+        // Текст — команда меню: сразу REPLY, ожидание снимается
         BotCommand textCmd = textCommands.get(text);
         if (textCmd != null) {
             awaitingInput.remove(chatId);
             return Route.reply(textCmd);
         }
 
-        // Есть ожидание ввода: текст — ответ ожидающей команде (PENDING).
+        // Есть ожидание ввода: текст — ответ ожидающей команде (PENDING)
         AwaitingRequest pending = awaitingInput.get(chatId);
         if (pending != null) {
             return Route.pending(pending.command(), pending.marker());
         }
 
-        // Ни команда, ни ожидание: «не понимаю».
+        // Ни команда, ни ожидание: «не понимаю»
         replyUnexpected(chatId);
         return unroutable(chatId, "Не обрабатываемый ввод (len=" + text.length() + ")");
     }
