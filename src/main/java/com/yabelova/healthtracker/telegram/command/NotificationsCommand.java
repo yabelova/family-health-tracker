@@ -9,7 +9,6 @@ import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.LocalTime;
@@ -53,10 +52,7 @@ public class NotificationsCommand implements BotCommand {
             return null;
 
         } catch (DateTimeParseException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.NOTIFICATIONS_INVALID_FORMAT)
-                    .build());
+            reply.send(user, BotTexts.NOTIFICATIONS_INVALID_FORMAT);
             return marker; // продолжаем ждать корректный ввод
         }
     }
@@ -67,10 +63,7 @@ public class NotificationsCommand implements BotCommand {
         reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         if (action == CallbackAction.NOTIFICATION_EDIT) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.NOTIFICATIONS_ENTER_TIME)
-                    .build());
+            reply.send(user, BotTexts.NOTIFICATIONS_ENTER_TIME);
             return CallbackAction.NOTIFICATION_EDIT; // ожидаем ввод времени
 
         } else if (action == CallbackAction.NOTIFICATION_DISABLE) {

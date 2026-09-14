@@ -4,5 +4,5 @@ create table t_profile_invites (
     code varchar(8) not null unique,
     expires_at timestamp with time zone not null,
     used_at timestamp with time zone,
-    used_by bigint references t_users(id) on delete set null
+    used_by int references t_users(id) on delete set null
 );

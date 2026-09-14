@@ -16,7 +16,7 @@ public class ProfileAccessGuard {
 
     private final ProfileRepository profileRepository;
 
-    public void check(Long userId, Integer profileId) {
+    public void check(Integer userId, Integer profileId) {
         if (!profileRepository.isLinked(userId, profileId)) {
             throw new RecordOperationException(RecordOperationException.Error.PROFILE_ACCESS_DENIED);
         }

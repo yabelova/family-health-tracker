@@ -153,7 +153,7 @@ public class ProfileService {
      * Передача прав владельца другому участнику: цель становится OWNER, текущий — MEMBER
      */
     @Transactional
-    public void transferOwnership(User user, Integer profileId, Long targetUserId) {
+    public void transferOwnership(User user, Integer profileId, Integer targetUserId) {
         checkOwner(user, profileId);
         if (targetUserId.equals(user.getId())) {
             throw new ProfileOperationException(Error.OWN_PROFILE);

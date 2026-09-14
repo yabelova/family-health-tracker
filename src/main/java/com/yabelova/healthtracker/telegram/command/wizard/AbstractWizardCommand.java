@@ -11,12 +11,12 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.TimeZones;
 import com.yabelova.healthtracker.wizard.WizardReflection;
 import com.yabelova.healthtracker.wizard.WizardStep;
 import com.yabelova.healthtracker.wizard.WizardValidator;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
@@ -75,7 +75,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
     /**
      * Сохранение заполненных свойств, возвращает результат сохраняющему сервису.
      */
-    protected abstract Object save(P properties, Integer profileId, Long createdBy);
+    protected abstract Object save(P properties, Integer profileId, Integer createdBy);
 
     /**
      * Текст уведомления об успешном сохранении.
@@ -131,10 +131,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
 
         Object value = WizardValidator.convertIfValid(raw, type);
         if (value == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.WIZARD_INVALID_INPUT)
-                    .build());
+            reply.send(user, BotTexts.WIZARD_INVALID_INPUT);
             prompt(user, wizard);
             return wizard;
         }
@@ -147,10 +144,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
     private Object start(User user) {
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
         WizardMarker wizard = new WizardMarker(formClass(), 0, new HashMap<>(), profile.getId());
@@ -172,17 +166,11 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
         try {
             save(toProperties(wizard), wizard.profileId(), user.getId());
         } catch (RecordOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             profileSelectionScreen.render(user);
             return null;
         }
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(savedMessage())
-                .build());
+        reply.send(user, savedMessage());
         sectionCommand.showSection(user);
         return null;
     }
@@ -194,10 +182,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
     }
 
     private Object cancel(User user, WizardMarker wizard) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(cancelledMessage())
-                .build());
+        reply.send(user, cancelledMessage());
         sectionCommand.showSection(user);
         return null;
     }
@@ -240,12 +225,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
                 HtmlUtils.bold(step.label()), WizardValidator.formatHint(step.type()));
 
         InlineKeyboardMarkup km = keyboard.formStepKeyboard(step.type(), step.optional());
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(text)
-                .parseMode("HTML")
-                .replyMarkup(km)
-                .build());
+        reply.send(user, text, ParseMode.HTML, km);
     }
 
     private void showSummary(User user, WizardMarker wizard) {
@@ -257,12 +237,8 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
                     .append(HtmlUtils.escape(value))
                     .append('\n');
         }
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.WIZARD_SUMMARY.formatted(body.toString().strip()))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.formConfirmKeyboard())
-                .build());
+        reply.send(user, BotTexts.WIZARD_SUMMARY.formatted(body.toString().strip()),
+                ParseMode.HTML, keyboard.formConfirmKeyboard());
     }
 
     // ===== Помощники =====

@@ -40,7 +40,7 @@ public class MedicationCourseWizardCommand extends AbstractWizardCommand<Medicat
     }
 
     @Override
-    protected Object save(MedicationCourseProperties properties, Integer profileId, Long createdBy) {
+    protected Object save(MedicationCourseProperties properties, Integer profileId, Integer createdBy) {
         return medicationCourseService.save(profileId, createdBy, properties);
     }
 

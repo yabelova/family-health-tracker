@@ -13,17 +13,17 @@ public final class ParticipantName {
     }
 
     public static String of(ProfileParticipant participant) {
-        boolean hasName = StringUtils.hasText(participant.firstName());
-        boolean hasUsername = StringUtils.hasText(participant.username());
+        boolean hasName = StringUtils.hasText(participant.telegramFirstName());
+        boolean hasUsername = StringUtils.hasText(participant.telegramUsername());
 
         if (hasName && hasUsername) {
-            return participant.firstName() + " @" + participant.username();
+            return participant.telegramFirstName() + " @" + participant.telegramUsername();
         }
         if (hasName) {
-            return participant.firstName();
+            return participant.telegramFirstName();
         }
         if (hasUsername) {
-            return "@" + participant.username();
+            return "@" + participant.telegramUsername();
         }
         return BotTexts.PARTICIPANT_UNKNOWN;
     }

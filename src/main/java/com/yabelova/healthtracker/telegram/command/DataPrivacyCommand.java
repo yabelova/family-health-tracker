@@ -15,12 +15,12 @@ import com.yabelova.healthtracker.telegram.support.Commands;
 import com.yabelova.healthtracker.telegram.support.ConfirmationWords;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ParticipantName;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Numbers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.ArrayList;
@@ -54,10 +54,7 @@ public class DataPrivacyCommand implements BotCommand {
 
     @Override
     public Object handleText(Update update, User user) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.DELETE_ALL_WARNING)
-                .build());
+        reply.send(user, BotTexts.DELETE_ALL_WARNING);
 
         ProfileGroups profileGroups = dataPrivacyService.getAndGroupProfiles(user);
         return continueFlow(user, new DeleteFlow(profileGroups, List.of()));
@@ -69,35 +66,23 @@ public class DataPrivacyCommand implements BotCommand {
         String raw = update.getMessage().getText().trim();
 
         if (!raw.equalsIgnoreCase(ConfirmationWords.DELETE)) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.DELETE_ALL_CANCELLED)
-                    .build());
+            reply.send(user, BotTexts.DELETE_ALL_CANCELLED);
             return null;
         }
 
         if (flow == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(errorText(null))
-                    .build());
+            reply.send(user, errorText(null));
             return null;
         }
 
         try {
             dataPrivacyService.applyDeletionPlan(user, flow.decisions());
         } catch (ProfileOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(errorText(e.getMessage()))
-                    .build());
+            reply.send(user, errorText(e.getMessage()));
             return null;
         }
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.DELETE_ALL_SUCCESS.formatted(Commands.START.token()))
-                .build());
+        reply.send(user, BotTexts.DELETE_ALL_SUCCESS.formatted(Commands.START.token()));
         return null;
     }
 
@@ -122,7 +107,7 @@ public class DataPrivacyCommand implements BotCommand {
 
         List<PrivacyDecision> decisions = new ArrayList<>(flow.decisions());
         if (action == CallbackAction.PRIVACY_TRANSFER && payload.length >= 3) {
-            Long targetUserId = Numbers.parseLong(payload[2]);
+            Integer targetUserId = Numbers.parseInt(payload[2]);
             if (targetUserId != null) {
                 decisions.add(new PrivacyDecision(profileId, Decision.TRANSFER, targetUserId));
             }
@@ -140,11 +125,8 @@ public class DataPrivacyCommand implements BotCommand {
         Optional<OwnerShared> next = nextUndecided(flow);
 
         if (next.isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.DELETE_ALL_SUMMARY.formatted(profileLines(flow), ConfirmationWords.DELETE))
-                    .parseMode("HTML")
-                    .build());
+            reply.send(user, BotTexts.DELETE_ALL_SUMMARY.formatted(profileLines(flow), ConfirmationWords.DELETE),
+                    ParseMode.HTML);
             return flow;
         }
 
@@ -153,18 +135,15 @@ public class DataPrivacyCommand implements BotCommand {
 
         StringBuilder body = new StringBuilder();
         for (ProfileParticipant participant : participants) {
-            body.append("• ").append(ParticipantName.of(participant)).append("\n");
+            body.append("• ").append(HtmlUtils.escape(ParticipantName.of(participant))).append("\n");
         }
         body.append(BotTexts.DELETE_ALL_PROFILE_OPTIONS);
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.DELETE_ALL_PROFILE_PROMPT.formatted(
-                        HtmlUtils.bold(ownerShared.profile().getName()), body))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.transferChoices(participants,
-                        CallbackAction.PRIVACY_TRANSFER, ownerShared.profile().getId(), true))
-                .build());
+        reply.send(user, BotTexts.DELETE_ALL_PROFILE_PROMPT.formatted(
+                        HtmlUtils.bold(ownerShared.profile().getName()), body),
+                ParseMode.HTML,
+                keyboard.transferChoices(participants,
+                        CallbackAction.PRIVACY_TRANSFER, ownerShared.profile().getId(), true));
         return flow;
     }
 

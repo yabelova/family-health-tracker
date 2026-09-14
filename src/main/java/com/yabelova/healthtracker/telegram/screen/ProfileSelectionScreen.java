@@ -8,7 +8,6 @@ import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 import java.util.List;
 
@@ -31,10 +30,6 @@ public class ProfileSelectionScreen {
                 ? BotTexts.PROFILE_SELECTION_EMPTY
                 : BotTexts.PROFILE_SELECTION_HAS;
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(text)
-                .replyMarkup(keyboard.profileSelection(profiles, user.getActiveProfileId()))
-                .build());
+        reply.send(user, text, keyboard.profileSelection(profiles, user.getActiveProfileId()));
     }
 }

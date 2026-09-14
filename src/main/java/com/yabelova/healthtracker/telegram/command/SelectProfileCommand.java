@@ -10,7 +10,6 @@ import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -51,10 +50,7 @@ public class SelectProfileCommand implements BotCommand {
             profileService.setActiveProfile(user, profileId);
         } catch (RuntimeException e) {
             log.warn("Битые callback-данные выбора профиля [{}] от [{}]", data, user.getId());
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.PROFILE_UNAVAILABLE)
-                    .build());
+            reply.send(user, BotTexts.PROFILE_UNAVAILABLE);
             profileSelectionScreen.render(user);
             return null;
         }

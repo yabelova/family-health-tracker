@@ -8,7 +8,6 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -34,10 +33,7 @@ public class ProfileMenuCommand implements BotCommand {
     @Override
     public Object handleText(Update update, User user) {
         if (user.getActiveProfileId() == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             profileSelectionScreen.render(user);
             return null;
         }

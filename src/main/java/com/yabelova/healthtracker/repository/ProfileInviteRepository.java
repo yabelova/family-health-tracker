@@ -3,7 +3,7 @@ package com.yabelova.healthtracker.repository;
 import com.yabelova.healthtracker.domain.ProfileInvite;
 import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Repository
 @SuppressWarnings("NullableProblems")
-public interface ProfileInviteRepository extends CrudRepository<ProfileInvite, Integer> {
+public interface ProfileInviteRepository extends ListCrudRepository<ProfileInvite, Integer> {
 
     Optional<ProfileInvite> findByCode(String code);
 
@@ -23,7 +23,7 @@ public interface ProfileInviteRepository extends CrudRepository<ProfileInvite, I
             """)
     long claim(@Param("code") String code,
                @Param("now") Instant now,
-               @Param("userId") Long userId);
+               @Param("userId") Integer userId);
 
     @Modifying
     @Query("""

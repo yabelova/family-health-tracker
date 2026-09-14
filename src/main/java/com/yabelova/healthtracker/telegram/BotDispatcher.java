@@ -9,7 +9,6 @@ import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.HashMap;
@@ -29,7 +28,7 @@ public class BotDispatcher {
 
     private final Map<String, BotCommand> textCommands = new HashMap<>();
     private final Map<CallbackAction, BotCommand> callbackCommands = new HashMap<>();
-    private final Map<Long, AwaitingRequest> awaitingInput = new HashMap<>();
+    private final Map<Integer, AwaitingRequest> awaitingInput = new HashMap<>();
 
     public BotDispatcher(UserService userService,
                          ReplySender reply,
@@ -58,7 +57,7 @@ public class BotDispatcher {
         }
         User user = getOrCreateUser(input);
 
-        Route route = route(update, user.getId());
+        Route route = route(update, user);
         BotCommand active = route.command();
 
         if (route.kind() == RouteKind.CALLBACK) {
@@ -78,19 +77,16 @@ public class BotDispatcher {
                 case NONE -> null;
             };
         } catch (RecordOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             next = null;
         }
 
         if (next != null) {
-            awaitingInput.put(input.chatId(), new AwaitingRequest(active, next));
-            log.info("Ожидание ввода: chat={} cmd={} marker={}", input.chatId(),
+            awaitingInput.put(user.getId(), new AwaitingRequest(active, next));
+            log.info("Ожидание ввода: userId={} cmd={} marker={}", user.getId(),
                     active.getClass().getSimpleName(), markerLabel(next));
         } else {
-            awaitingInput.remove(input.chatId());
+            awaitingInput.remove(user.getId());
         }
     }
 
@@ -125,10 +121,10 @@ public class BotDispatcher {
         return userService.getOrCreate(input.chatId(), input.firstName(), input.userName());
     }
 
-    private Route route(Update update, Long chatId) {
+    private Route route(Update update, User user) {
         return update.hasCallbackQuery()
-                ? routeCallback(update, chatId)
-                : routeText(update, chatId);
+                ? routeCallback(update, user)
+                : routeText(update, user);
     }
 
     private String markerLabel(Object marker) {
@@ -138,65 +134,62 @@ public class BotDispatcher {
         return marker.getClass().getSimpleName();
     }
 
-    private Route routeCallback(Update update, Long chatId) {
+    private Route routeCallback(Update update, User user) {
         String data = update.getCallbackQuery().getData();
         CallbackAction action = CallbackAction.fromData(data);
-        AwaitingRequest pending = awaitingInput.get(chatId);
+        AwaitingRequest pending = awaitingInput.get(user.getId());
 
         // Универсальная кнопка визарда: идет в команду, ожидающую ввод; без ожидания — устаревший клик
         if (action != null && action.isWizardAction()) {
             if (pending != null) {
                 return Route.callback(pending.command(), pending.marker());
             }
-            return unroutable(chatId, "Устаревший wizard-клик [" + data + "]");
+            return unroutable(user, "Устаревший wizard-клик [" + data + "]");
         }
 
         // Обычная кнопка: незнакомое действие или нет команды — «нет такой команды»
         BotCommand callbackCmd = action != null ? callbackCommands.get(action) : null;
         if (callbackCmd == null) {
-            replyUnexpected(chatId);
-            return unroutable(chatId, "Неизвестное callback-действие [" + data + "]");
+            replyUnexpected(user);
+            return unroutable(user, "Неизвестное callback-действие [" + data + "]");
         }
-        // Клик по чужой команде снимает текущее ожидание (одно ожидание на чат)
+        // Клик по чужой команде снимает текущее ожидание (одно ожидание на пользователя)
         if (pending != null && pending.command() != callbackCmd) {
-            awaitingInput.remove(chatId);
+            awaitingInput.remove(user.getId());
             pending = null;
         }
         return Route.callback(callbackCmd, pending != null ? pending.marker() : null);
     }
 
-    private Route routeText(Update update, Long chatId) {
+    private Route routeText(Update update, User user) {
         String text = textOf(update);
 
         // Текст — команда меню: сразу REPLY, ожидание снимается
         BotCommand textCmd = textCommands.get(text);
         if (textCmd != null) {
-            awaitingInput.remove(chatId);
+            awaitingInput.remove(user.getId());
             return Route.reply(textCmd);
         }
 
         // Есть ожидание ввода: текст — ответ ожидающей команде (PENDING)
-        AwaitingRequest pending = awaitingInput.get(chatId);
+        AwaitingRequest pending = awaitingInput.get(user.getId());
         if (pending != null) {
             return Route.pending(pending.command(), pending.marker());
         }
 
         // Ни команда, ни ожидание: «не понимаю»
-        replyUnexpected(chatId);
-        return unroutable(chatId, "Не обрабатываемый ввод (len=" + text.length() + ")");
+        replyUnexpected(user);
+        return unroutable(user, "Не обрабатываемый ввод (len=" + text.length() + ")");
     }
 
-    private Route unroutable(Long chatId, String reason) {
-        awaitingInput.remove(chatId);
-        log.warn("{} от пользователя [{}]", reason, chatId);
+    private Route unroutable(User user, String reason) {
+        awaitingInput.remove(user.getId());
+        log.warn("{} от пользователя [{}]", reason, user.getId());
         return Route.none();
     }
 
-    private void replyUnexpected(Long chatId) {
-        reply.send(SendMessage.builder()
-                .chatId(chatId.toString())
-                .text(BotTexts.COMMON_UNKNOWN_COMMAND)
-                .build());
+    private void replyUnexpected(User user) {
+        reply.send(user, BotTexts.COMMON_UNKNOWN_COMMAND);
     }
 
     private String textOf(Update update) {

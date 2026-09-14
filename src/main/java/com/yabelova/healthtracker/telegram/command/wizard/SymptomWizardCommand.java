@@ -40,7 +40,7 @@ public class SymptomWizardCommand extends AbstractWizardCommand<SymptomLogProper
     }
 
     @Override
-    protected Object save(SymptomLogProperties properties, Integer profileId, Long createdBy) {
+    protected Object save(SymptomLogProperties properties, Integer profileId, Integer createdBy) {
         return symptomService.save(profileId, createdBy, properties);
     }
 

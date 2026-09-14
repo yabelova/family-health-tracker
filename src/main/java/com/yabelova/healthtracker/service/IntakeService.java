@@ -19,7 +19,7 @@ public class IntakeService {
     private final MedicationIntakeRepository repository;
     private final ProfileAccessGuard accessGuard;
 
-    public MedicationIntake save(Integer profileId, Long createdBy, Integer courseId,
+    public MedicationIntake save(Integer profileId, Integer createdBy, Integer courseId,
                                  MedicationIntakeProperties properties) {
         accessGuard.check(createdBy, profileId);
         MedicationIntake intake = MedicationIntake.builder()
@@ -32,24 +32,24 @@ public class IntakeService {
         return repository.save(intake);
     }
 
-    public List<MedicationIntake> listByProfile(Long userId, Integer profileId) {
+    public List<MedicationIntake> listByProfile(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileId(profileId);
     }
 
-    public List<MedicationIntake> listLastSevenDays(Long userId, Integer profileId) {
+    public List<MedicationIntake> listLastSevenDays(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileIdAndTakenAtSince(profileId,
                 LocalDate.now(TimeZones.DEFAULT).minusDays(7).atStartOfDay());
     }
 
-    public List<MedicationIntake> listToday(Long userId, Integer profileId) {
+    public List<MedicationIntake> listToday(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileIdAndTakenAtSince(profileId,
                 LocalDate.now(TimeZones.DEFAULT).atStartOfDay());
     }
 
-    public void delete(Long userId, Integer profileId, Integer id) {
+    public void delete(Integer userId, Integer profileId, Integer id) {
         accessGuard.check(userId, profileId);
         MedicationIntake intake = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));

@@ -5,15 +5,18 @@ create table t_profiles (
 );
 
 create table t_users (
-    id bigint primary key,
-    username varchar(100),
-    first_name varchar(100) not null,
+    id serial primary key,
+    telegram_id bigint not null,
+    telegram_username varchar(100),
+    telegram_first_name varchar(100) not null,
     notification_time time,
     created_at timestamp with time zone
 );
 
+create unique index t_users_telegram_id_uq on t_users (telegram_id);
+
 create table tr_user_profile (
-    user_id bigint not null,
+    user_id int not null,
     profile_id int not null,
     role varchar(30) default 'MEMBER',
     is_active boolean not null default false,

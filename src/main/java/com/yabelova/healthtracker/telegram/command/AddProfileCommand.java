@@ -8,10 +8,10 @@ import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -34,30 +34,21 @@ public class AddProfileCommand implements BotCommand {
         String raw = update.getMessage().getText();
 
         if (raw == null || raw.trim().isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.ADD_CODE_PROMPT)
-                    .build());
+            reply.send(user, BotTexts.ADD_CODE_PROMPT);
             return marker;
         }
 
         try {
             Profile profile = profileService.claimInvite(user, raw);
 
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.ADD_PROFILE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())))
-                    .parseMode("HTML")
-                    .build());
+            reply.send(user, BotTexts.ADD_PROFILE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())),
+                    ParseMode.HTML);
 
             profileSelectionScreen.render(user);
             return null;
 
         } catch (ProfileOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             return marker; // продолжаем ждать корректный код
         }
     }
@@ -66,10 +57,7 @@ public class AddProfileCommand implements BotCommand {
     public Object handleCallback(Update update, User user) {
         reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.ADD_CODE_PROMPT)
-                .build());
+        reply.send(user, BotTexts.ADD_CODE_PROMPT);
 
         return CallbackAction.PROFILE_ADD_BY_CODE; // ожидаем следующий текст (код)
     }

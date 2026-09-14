@@ -9,6 +9,7 @@ import com.yabelova.healthtracker.telegram.screen.ProfileSelectionScreen;
 import com.yabelova.healthtracker.telegram.screen.RecordSectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
+import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Dates;
 import org.springframework.stereotype.Component;
@@ -63,18 +64,18 @@ public class IntakeSectionCommand extends AbstractSectionCommand<MedicationIntak
 
     @Override
     protected String sectionTitle() {
-        return BotTexts.INTAKE_SECTION_TITLE;
+        return BotTexts.INLINE_BTN_MENU_TAKE;
     }
 
     @Override
-    protected List<MedicationIntake> listForExport(Long userId, Integer profileId) {
+    protected List<MedicationIntake> listForExport(Integer userId, Integer profileId) {
         List<MedicationIntake> intakes = intakeService.listLastSevenDays(userId, profileId);
         intakes.sort(Comparator.comparing(intake -> intake.getProperties().getTakenAt()));
         return intakes;
     }
 
     @Override
-    protected List<MedicationIntake> listForDelete(Long userId, Integer profileId) {
+    protected List<MedicationIntake> listForDelete(Integer userId, Integer profileId) {
         return intakeService.listByProfile(userId, profileId);
     }
 
@@ -85,11 +86,15 @@ public class IntakeSectionCommand extends AbstractSectionCommand<MedicationIntak
 
     @Override
     protected String deleteLabel(MedicationIntake record) {
-        return formatExport(record);
+        return intakeLine(record);
     }
 
     @Override
-    protected String formatExport(MedicationIntake record) {
+    protected String exportLine(MedicationIntake record) {
+        return intakeLine(record);
+    }
+
+    private String intakeLine(MedicationIntake record) {
         var properties = record.getProperties();
         return Dates.DATE_TIME.format(properties.getTakenAt())
                 + " — 💊 " + properties.getMedication() + ", " + properties.getDoses() + " доз.";
@@ -101,7 +106,7 @@ public class IntakeSectionCommand extends AbstractSectionCommand<MedicationIntak
     }
 
     @Override
-    protected void delete(Long userId, Integer profileId, Integer id) {
+    protected void delete(Integer userId, Integer profileId, Integer id) {
         intakeService.delete(userId, profileId, id);
     }
 
@@ -116,7 +121,7 @@ public class IntakeSectionCommand extends AbstractSectionCommand<MedicationIntak
                 .map(intake -> {
                     var properties = intake.getProperties();
                     return BotTexts.INTAKE_TODAY_LINE.formatted(
-                            properties.getMedication(),
+                            HtmlUtils.escape(properties.getMedication()),
                             Dates.TIME.format(properties.getTakenAt()),
                             properties.getDoses());
                 })

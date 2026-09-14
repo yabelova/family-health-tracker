@@ -15,12 +15,12 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Dates;
 import com.yabelova.healthtracker.util.Numbers;
 import com.yabelova.healthtracker.util.TimeZones;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.LocalDateTime;
@@ -117,10 +117,7 @@ public class IntakeTakeCommand implements BotCommand {
     private Object start(User user) {
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
         IntakeFlowMarker flow = new IntakeFlowMarker(STEP_MEDICATION, null, null, null, null, profile.getId());
@@ -198,10 +195,7 @@ public class IntakeTakeCommand implements BotCommand {
                 flow.takenAt(),
                 flow.doses());
         intakeService.save(flow.profileId(), user.getId(), flow.courseId(), properties);
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.INTAKE_SAVED)
-                .build());
+        reply.send(user, BotTexts.INTAKE_SAVED);
         sectionCommand.showSection(user);
         return null;
     }
@@ -213,28 +207,19 @@ public class IntakeTakeCommand implements BotCommand {
     }
 
     private Object cancel(User user, IntakeFlowMarker flow) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.INTAKE_CANCELLED)
-                .build());
+        reply.send(user, BotTexts.INTAKE_CANCELLED);
         sectionCommand.showSection(user);
         return null;
     }
 
     private Object reprompt(User user, IntakeFlowMarker flow, String errorText) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(errorText)
-                .build());
+        reply.send(user, errorText);
         promptStep(user, flow);
         return flow;
     }
 
     private Object sendError(User user, RecordOperationException e) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(e.getMessage())
-                .build());
+        reply.send(user, e.getMessage());
         profileSelectionScreen.render(user);
         return null;
     }
@@ -255,42 +240,26 @@ public class IntakeTakeCommand implements BotCommand {
         String text = courses.isEmpty()
                 ? BotTexts.INTAKE_STEP_MEDICATION_NO_COURSES
                 : BotTexts.INTAKE_STEP_MEDICATION_PROMPT;
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(text)
-                .parseMode("HTML")
-                .replyMarkup(keyboard.intakeMedication(courses))
-                .build());
+        reply.send(user, text, ParseMode.HTML,
+                keyboard.intakeMedication(courses));
     }
 
     private void promptDoses(User user) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.INTAKE_STEP_DOSES_PROMPT)
-                .parseMode("HTML")
-                .replyMarkup(keyboard.intakeDoses())
-                .build());
+        reply.send(user, BotTexts.INTAKE_STEP_DOSES_PROMPT, ParseMode.HTML,
+                keyboard.intakeDoses());
     }
 
     private void promptTime(User user) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.INTAKE_STEP_TAKEN_AT_PROMPT)
-                .parseMode("HTML")
-                .replyMarkup(keyboard.intakeTime())
-                .build());
+        reply.send(user, BotTexts.INTAKE_STEP_TAKEN_AT_PROMPT, ParseMode.HTML,
+                keyboard.intakeTime());
     }
 
     private void showSummary(User user, IntakeFlowMarker flow) {
         String body = "• Препарат: " + HtmlUtils.escape(flow.medication())
                 + "\n• Дозы: " + flow.doses()
                 + "\n• Время: " + HtmlUtils.escape(Dates.DATE_TIME.format(flow.takenAt()));
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.INTAKE_CONFIRM_TEXT.formatted(body))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.formConfirmKeyboard())
-                .build());
+        reply.send(user, BotTexts.INTAKE_CONFIRM_TEXT.formatted(body), ParseMode.HTML,
+                keyboard.formConfirmKeyboard());
     }
 
     // ===== Помощники =====

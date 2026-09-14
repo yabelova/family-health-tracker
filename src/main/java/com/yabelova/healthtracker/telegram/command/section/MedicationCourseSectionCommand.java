@@ -55,16 +55,16 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
 
     @Override
     protected String sectionTitle() {
-        return BotTexts.MEDICATION_COURSE_SECTION_TITLE;
+        return BotTexts.INLINE_BTN_MENU_COURSE;
     }
 
     @Override
-    protected List<MedicationCourse> listForExport(Long userId, Integer profileId) {
+    protected List<MedicationCourse> listForExport(Integer userId, Integer profileId) {
         return courseService.listByProfile(userId, profileId);
     }
 
     @Override
-    protected List<MedicationCourse> listForDelete(Long userId, Integer profileId) {
+    protected List<MedicationCourse> listForDelete(Integer userId, Integer profileId) {
         return courseService.listByProfile(userId, profileId);
     }
 
@@ -87,7 +87,7 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
     }
 
     @Override
-    protected String formatExport(MedicationCourse record) {
+    protected String exportLine(MedicationCourse record) {
         MedicationCourseProperties properties = record.getProperties();
         StringBuilder sb = new StringBuilder();
         sb.append("💊 ").append(properties.getMedication());
@@ -114,7 +114,7 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
     }
 
     @Override
-    protected void delete(Long userId, Integer profileId, Integer id) {
+    protected void delete(Integer userId, Integer profileId, Integer id) {
         courseService.delete(userId, profileId, id);
     }
 }

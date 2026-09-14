@@ -4,10 +4,10 @@ import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 /**
  * Общий экран «Уведомления». Доступен всегда (профиль не требуется)
@@ -24,11 +24,7 @@ public class NotificationsScreen {
                 ? user.getNotificationTime().toString()
                 : BotTexts.NOTIFICATIONS_TIME_UNSET;
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.NOTIFICATIONS_CURRENT.formatted(HtmlUtils.bold(time)))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.notifications(user.getNotificationTime() != null))
-                .build());
+        reply.send(user, BotTexts.NOTIFICATIONS_CURRENT.formatted(HtmlUtils.bold(time)), ParseMode.HTML,
+                keyboard.notifications(user.getNotificationTime() != null));
     }
 }

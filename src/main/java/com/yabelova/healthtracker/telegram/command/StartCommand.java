@@ -7,7 +7,6 @@ import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -26,11 +25,7 @@ public class StartCommand implements BotCommand {
 
     @Override
     public Object handleText(Update update, User user) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.DISCLAIMER)
-                .replyMarkup(keyboard.navigation())
-                .build());
+        reply.send(user, BotTexts.DISCLAIMER, keyboard.navigation());
         return null;
     }
 }

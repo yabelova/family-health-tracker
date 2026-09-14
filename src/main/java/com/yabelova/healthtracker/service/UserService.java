@@ -5,6 +5,7 @@ import com.yabelova.healthtracker.repository.ProfileRepository;
 import com.yabelova.healthtracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
@@ -15,17 +16,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
 
-    public User getOrCreate(Long chatId, String firstName, String userName) {
-        User user = userRepository.findById(chatId).orElseGet(() ->
+    @Transactional
+    public User getOrCreate(Long telegramId, String telegramFirstName, String telegramUsername) {
+        User user = userRepository.findByTelegramId(telegramId).orElseGet(() ->
                 userRepository.save(User.builder()
-                        .id(chatId)
-                        .firstName(firstName)
-                        .username(userName)
+                        .telegramId(telegramId)
+                        .telegramFirstName(telegramFirstName)
+                        .telegramUsername(telegramUsername)
                         .createdAt(Instant.now())
-                        .isNewEntry(true)
                         .build())
         );
-        user.setActiveProfileId(profileRepository.findActiveProfileIdByUserId(chatId));
+        user.setActiveProfileId(profileRepository.findActiveProfileIdByUserId(user.getId()));
         return user;
     }
 }

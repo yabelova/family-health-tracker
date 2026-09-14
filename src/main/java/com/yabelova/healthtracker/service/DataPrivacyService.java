@@ -50,7 +50,7 @@ public class DataPrivacyService {
      * Решение юзера по общему профилю: передать владение другому участнику
      * либо отозвать доступ
      */
-    public record PrivacyDecision(Integer profileId, Decision decision, Long targetUserId) {
+    public record PrivacyDecision(Integer profileId, Decision decision, Integer targetUserId) {
     }
 
     public ProfileGroups getAndGroupProfiles(User user) {

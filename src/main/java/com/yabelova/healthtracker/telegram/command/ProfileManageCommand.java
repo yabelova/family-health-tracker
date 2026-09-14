@@ -11,12 +11,12 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.ConfirmationWords;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ParticipantName;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Numbers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.List;
@@ -67,10 +67,7 @@ public class ProfileManageCommand implements BotCommand {
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
 
@@ -82,10 +79,7 @@ public class ProfileManageCommand implements BotCommand {
                 }
 
                 case PROFILE_RENAME -> {
-                    reply.send(SendMessage.builder()
-                            .chatId(user.getId().toString())
-                            .text(BotTexts.RENAME_PROMPT)
-                            .build());
+                    reply.send(user, BotTexts.RENAME_PROMPT);
                     return CallbackAction.PROFILE_RENAME; // ожидаем следующий текст (имя)
                 }
 
@@ -107,13 +101,10 @@ public class ProfileManageCommand implements BotCommand {
                 }
 
                 case PROFILE_DELETE -> {
-                    reply.send(SendMessage.builder()
-                            .chatId(user.getId().toString())
-                            .text(BotTexts.DELETE_CONFIRM.formatted(
+                    reply.send(user, BotTexts.DELETE_CONFIRM.formatted(
                                     HtmlUtils.bold(profile.getName()),
-                                    HtmlUtils.bold(ConfirmationWords.DELETE)))
-                            .parseMode("HTML")
-                            .build());
+                                    HtmlUtils.bold(ConfirmationWords.DELETE)),
+                            ParseMode.HTML);
                     return CallbackAction.PROFILE_DELETE; // ожидаем слово подтверждения или отмены
                 }
 
@@ -122,10 +113,7 @@ public class ProfileManageCommand implements BotCommand {
                 }
             }
         } catch (ProfileOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             return null;
         }
     }
@@ -134,19 +122,13 @@ public class ProfileManageCommand implements BotCommand {
         String name = update.getMessage().getText().trim();
 
         if (name.isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.RENAME_NAME_EMPTY)
-                    .build());
+            reply.send(user, BotTexts.RENAME_NAME_EMPTY);
             return marker;
         }
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
 
@@ -154,18 +136,11 @@ public class ProfileManageCommand implements BotCommand {
             profileService.renameProfile(user, profile.getId(), name);
             profile.setName(name);
         } catch (ProfileOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             return null;
         }
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.RENAME_SUCCESS.formatted(HtmlUtils.bold(name)))
-                .parseMode("HTML")
-                .build());
+        reply.send(user, BotTexts.RENAME_SUCCESS.formatted(HtmlUtils.bold(name)), ParseMode.HTML);
 
         renderManage(user, profile);
         return null;
@@ -176,10 +151,7 @@ public class ProfileManageCommand implements BotCommand {
 
         if (!raw.equalsIgnoreCase(ConfirmationWords.TRANSFER)) {
             Profile profile = profileService.getActiveProfile(user);
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.TRANSFER_CANCELLED)
-                    .build());
+            reply.send(user, BotTexts.TRANSFER_CANCELLED);
             if (profile != null) {
                 renderManage(user, profile);
             }
@@ -189,18 +161,12 @@ public class ProfileManageCommand implements BotCommand {
         try {
             profileService.transferOwnership(user, choice.profileId(), choice.targetUserId());
         } catch (ProfileOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
+            reply.send(user, e.getMessage());
             return null;
         }
 
         profileService.getActiveProfile(user);
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.TRANSFER_SUCCESS)
-                .build());
+        reply.send(user, BotTexts.TRANSFER_SUCCESS);
         profileSelectionScreen.render(user);
         return null;
     }
@@ -209,19 +175,13 @@ public class ProfileManageCommand implements BotCommand {
         String raw = update.getMessage().getText().trim();
 
         if (raw.isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.DELETE_PROMPT_PROGRESS.formatted(ConfirmationWords.DELETE))
-                    .build());
+            reply.send(user, BotTexts.DELETE_PROMPT_PROGRESS.formatted(ConfirmationWords.DELETE));
             return marker;
         }
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
 
@@ -229,57 +189,37 @@ public class ProfileManageCommand implements BotCommand {
             try {
                 profileService.deleteProfile(user, profile.getId());
             } catch (ProfileOperationException e) {
-                reply.send(SendMessage.builder()
-                        .chatId(user.getId().toString())
-                        .text(e.getMessage())
-                        .build());
+                reply.send(user, e.getMessage());
                 return null;
             }
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.DELETE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())))
-                    .parseMode("HTML")
-                    .build());
+            reply.send(user, BotTexts.DELETE_SUCCESS.formatted(HtmlUtils.bold(profile.getName())), ParseMode.HTML);
             profileSelectionScreen.render(user);
             return null;
         }
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.DELETE_CANCELLED)
-                .build());
+        reply.send(user, BotTexts.DELETE_CANCELLED);
         renderManage(user, profile);
         return null;
     }
 
 
     private void renderManage(User user, Profile profile) {
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.MANAGE_MENU_HEAD.formatted(HtmlUtils.bold(profile.getName())))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.manageMenu())
-                .build());
+        reply.send(user, BotTexts.MANAGE_MENU_HEAD.formatted(HtmlUtils.bold(profile.getName())),
+                ParseMode.HTML, keyboard.manageMenu());
     }
 
     private Object handleShare(User user, Profile profile) {
         String code = profileService.createInvite(user, profile.getId());
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.SHARE_CODE_TEXT.formatted(
-                        HtmlUtils.bold(profile.getName()), HtmlUtils.bold(code)))
-                .parseMode("HTML")
-                .build());
+        reply.send(user, BotTexts.SHARE_CODE_TEXT.formatted(
+                        HtmlUtils.bold(profile.getName()), HtmlUtils.bold(code)),
+                ParseMode.HTML);
         renderManage(user, profile);
         return null;
     }
 
     private Object handleRevoke(User user, Profile profile) {
         profileService.revokeAccess(user, profile.getId());
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.REVOKE_SUCCESS)
-                .build());
+        reply.send(user, BotTexts.REVOKE_SUCCESS);
         renderManage(user, profile);
         return null;
     }
@@ -287,21 +227,15 @@ public class ProfileManageCommand implements BotCommand {
     private void renderTransferChoice(User user, Profile profile) {
         List<ProfileParticipant> participants = profileService.participants(profile.getId());
         if (participants.isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.TRANSFER_NO_PARTICIPANTS.formatted(HtmlUtils.bold(profile.getName())))
-                    .parseMode("HTML")
-                    .build());
+            reply.send(user, BotTexts.TRANSFER_NO_PARTICIPANTS.formatted(HtmlUtils.bold(profile.getName())),
+                    ParseMode.HTML);
             renderManage(user, profile);
             return;
         }
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.TRANSFER_PROMPT.formatted(HtmlUtils.bold(profile.getName())))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.transferChoices(participants,
-                        CallbackAction.PROFILE_TRANSFER_OWNERSHIP, profile.getId(), false))
-                .build());
+        reply.send(user, BotTexts.TRANSFER_PROMPT.formatted(HtmlUtils.bold(profile.getName())),
+                ParseMode.HTML,
+                keyboard.transferChoices(participants,
+                        CallbackAction.PROFILE_TRANSFER_OWNERSHIP, profile.getId(), false));
     }
 
     private Object handleTransferChoice(String data, User user, Profile profile) {
@@ -309,7 +243,7 @@ public class ProfileManageCommand implements BotCommand {
         if (payload.length < 3) {
             return null;
         }
-        Long targetUserId = Numbers.parseLong(payload[2]);
+        Integer targetUserId = Numbers.parseInt(payload[2]);
         if (targetUserId == null) {
             return null;
         }
@@ -318,20 +252,17 @@ public class ProfileManageCommand implements BotCommand {
                 .findFirst()
                 .map(ParticipantName::of)
                 .orElse(BotTexts.TRANSFER_TARGET_DATIVE);
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.TRANSFER_CONFIRM.formatted(
+        reply.send(user, BotTexts.TRANSFER_CONFIRM.formatted(
                         HtmlUtils.bold(profile.getName()),
                         HtmlUtils.bold(targetName),
-                        HtmlUtils.bold(ConfirmationWords.TRANSFER)))
-                .parseMode("HTML")
-                .build());
+                        HtmlUtils.bold(ConfirmationWords.TRANSFER)),
+                ParseMode.HTML);
         return new TransferChoice(profile.getId(), targetUserId);
     }
 
     /**
      * Маркер ожидания слова «передать» после выбора нового владельца.
      */
-    private record TransferChoice(Integer profileId, Long targetUserId) {
+    private record TransferChoice(Integer profileId, Integer targetUserId) {
     }
 }

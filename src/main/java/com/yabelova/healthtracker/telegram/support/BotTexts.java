@@ -137,23 +137,21 @@ public final class BotTexts {
     // ===== ШАПКА РАЗДЕЛОВ =====
 
     public static final String SECTION_PROFILE_HEADER = "👤 Профиль: %s";
+    public static final String SECTION_ACTION_PROMPT = "Выберите действие:";
 
     // ===== РАЗДЕЛЫ ЗАПИСЕЙ (симптомы / курсы лечения / приемы) =====
 
     public static final String SYMPTOM_SAVED = "✅ Симптом записан!";
     public static final String SYMPTOM_CANCELLED = "📝 Запись симптома отменена";
-    public static final String SYMPTOM_SECTION_TITLE = "📝 Симптомы\n\nВыберите действие:";
     public static final String SYMPTOM_EXPORT_EMPTY = "За последние 7 дней симптомов не записано";
 
     public static final String MEDICATION_COURSE_SAVED = "✅ Курс лечения добавлен!";
     public static final String MEDICATION_COURSE_CANCELLED = "📝 Добавление курса отменено";
-    public static final String MEDICATION_COURSE_SECTION_TITLE = "💊 Курсы лечения\n\nВыберите действие:";
     public static final String MEDICATION_COURSE_EXPORT_EMPTY = "Курсов лечения пока нет";
 
     // Приемы лекарств
     public static final String INTAKE_SAVED = "✅ Приём сохранён!";
     public static final String INTAKE_CANCELLED = "📝 Отметка приёма отменена";
-    public static final String INTAKE_SECTION_TITLE = "💊 Приёмы лекарств\n\nВыберите действие:";
     public static final String INTAKE_EXPORT_EMPTY = "За последние 7 дней приёмов не отмечено";
     public static final String INTAKE_TODAY_HEAD = "Сегодня принято:\n%s";
     public static final String INTAKE_TODAY_LINE = "• 💊 %s (%s) — %d доз.";

@@ -7,10 +7,10 @@ import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.ProfileMenuScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Set;
@@ -33,20 +33,13 @@ public class CreateProfileCommand implements BotCommand {
         String name = update.getMessage().getText().trim();
 
         if (name.isEmpty()) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.CREATE_PROFILE_NAME_EMPTY)
-                    .build());
+            reply.send(user, BotTexts.CREATE_PROFILE_NAME_EMPTY);
             return marker; // продолжаем ждать ввод
         }
 
         Profile saved = profileService.createProfile(user, name);
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.CREATE_PROFILE_SUCCESS.formatted(HtmlUtils.bold(saved.getName())))
-                .parseMode("HTML")
-                .build());
+        reply.send(user, BotTexts.CREATE_PROFILE_SUCCESS.formatted(HtmlUtils.bold(saved.getName())), ParseMode.HTML);
 
         profileMenuScreen.render(user);
         return null;
@@ -56,10 +49,7 @@ public class CreateProfileCommand implements BotCommand {
     public Object handleCallback(Update update, User user) {
         reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.CREATE_PROFILE_PROMPT)
-                .build());
+        reply.send(user, BotTexts.CREATE_PROFILE_PROMPT);
 
         return CallbackAction.PROFILE_CREATE; // ожидаем следующий текст (имя)
     }

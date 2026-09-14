@@ -6,10 +6,10 @@ import com.yabelova.healthtracker.service.ProfileService;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
 import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 /**
  * Общий экран «Меню профиля». Вызывается из Start, Select, Create и той же reply-кнопки
@@ -26,20 +26,13 @@ public class ProfileMenuScreen {
         Profile profile = profileService.getActiveProfile(user);
 
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return;
         }
 
         boolean isOwner = profileService.isOwner(user, profile.getId());
 
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.PROFILE_MENU_TITLE.formatted(HtmlUtils.bold(profile.getName())))
-                .parseMode("HTML")
-                .replyMarkup(keyboard.profileMenu(isOwner))
-                .build());
+        reply.send(user, BotTexts.PROFILE_MENU_TITLE.formatted(HtmlUtils.bold(profile.getName())), ParseMode.HTML,
+                keyboard.profileMenu(isOwner));
     }
 }

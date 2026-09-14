@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
@@ -22,18 +21,14 @@ public class MedicationIntake {
     @Nullable
     private Integer id;
 
-    @Column("profile_id")
     private Integer profileId;
 
-    @Column("course_id")
     @Nullable
     private Integer courseId;
 
-    @Column("created_by")
     @Nullable
-    private Long createdBy;
+    private Integer createdBy;
 
-    @Column("created_at")
     private Instant createdAt;
 
     @Nullable

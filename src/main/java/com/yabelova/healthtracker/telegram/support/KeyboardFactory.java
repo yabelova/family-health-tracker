@@ -82,14 +82,14 @@ public class KeyboardFactory {
      * Список записей для удаления: кнопка на каждую (callback deleteSelected:id)
      * + внизу кнопка «Назад» в раздел.
      */
-    public InlineKeyboardMarkup recordDeleteList(List<RecordDeleteOption> options,
+    public InlineKeyboardMarkup recordDeleteList(List<DeletionData> deletions,
                                                  CallbackAction deleteSelected,
                                                  CallbackAction back) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        for (RecordDeleteOption option : options) {
-            rows.add(List.of(inlineButton(option.label(),
-                    deleteSelected.prefix() + ":" + option.id())));
+        for (DeletionData deletion : deletions) {
+            rows.add(List.of(inlineButton(deletion.label(),
+                    deleteSelected.prefix() + ":" + deletion.id())));
         }
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, back.prefix())));
 

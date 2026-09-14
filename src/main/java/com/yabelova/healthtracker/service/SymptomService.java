@@ -19,7 +19,7 @@ public class SymptomService {
     private final SymptomLogRepository repository;
     private final ProfileAccessGuard accessGuard;
 
-    public SymptomLog save(Integer profileId, Long createdBy, SymptomLogProperties properties) {
+    public SymptomLog save(Integer profileId, Integer createdBy, SymptomLogProperties properties) {
         accessGuard.check(createdBy, profileId);
         SymptomLog log = SymptomLog.builder()
                 .profileId(profileId)
@@ -30,18 +30,18 @@ public class SymptomService {
         return repository.save(log);
     }
 
-    public List<SymptomLog> listByProfile(Long userId, Integer profileId) {
+    public List<SymptomLog> listByProfile(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileId(profileId);
     }
 
-    public List<SymptomLog> listLastSevenDays(Long userId, Integer profileId) {
+    public List<SymptomLog> listLastSevenDays(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileIdAndSymptomTimeSince(profileId,
                 LocalDate.now(TimeZones.DEFAULT).minusDays(7).atStartOfDay());
     }
 
-    public void delete(Long userId, Integer profileId, Integer id) {
+    public void delete(Integer userId, Integer profileId, Integer id) {
         accessGuard.check(userId, profileId);
         SymptomLog log = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));

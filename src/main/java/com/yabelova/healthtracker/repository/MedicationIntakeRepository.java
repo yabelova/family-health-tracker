@@ -2,7 +2,7 @@ package com.yabelova.healthtracker.repository;
 
 import com.yabelova.healthtracker.domain.MedicationIntake;
 import org.springframework.data.jdbc.repository.query.Query;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +11,7 @@ import java.util.List;
 
 @Repository
 @SuppressWarnings("NullableProblems")
-public interface MedicationIntakeRepository extends CrudRepository<MedicationIntake, Integer> {
+public interface MedicationIntakeRepository extends ListCrudRepository<MedicationIntake, Integer> {
 
     List<MedicationIntake> findByProfileId(Integer profileId);
 

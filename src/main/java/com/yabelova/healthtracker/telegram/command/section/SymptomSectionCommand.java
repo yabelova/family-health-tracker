@@ -55,18 +55,18 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
 
     @Override
     protected String sectionTitle() {
-        return BotTexts.SYMPTOM_SECTION_TITLE;
+        return BotTexts.INLINE_BTN_MENU_SYMPTOM;
     }
 
     @Override
-    protected List<SymptomLog> listForExport(Long userId, Integer profileId) {
+    protected List<SymptomLog> listForExport(Integer userId, Integer profileId) {
         List<SymptomLog> logs = symptomService.listLastSevenDays(userId, profileId);
         logs.sort(Comparator.comparing(log -> log.getProperties().getSymptomTime()));
         return logs;
     }
 
     @Override
-    protected List<SymptomLog> listForDelete(Long userId, Integer profileId) {
+    protected List<SymptomLog> listForDelete(Integer userId, Integer profileId) {
         return symptomService.listByProfile(userId, profileId);
     }
 
@@ -77,14 +77,12 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
 
     @Override
     protected String deleteLabel(SymptomLog record) {
-        return Dates.DATE_TIME.format(record.getProperties().getSymptomTime())
-                + " — " + description(record);
+        return symptomLine(record);
     }
 
     @Override
-    protected String formatExport(SymptomLog record) {
-        return Dates.DATE_TIME.format(record.getProperties().getSymptomTime())
-                + " — " + description(record);
+    protected String exportLine(SymptomLog record) {
+        return symptomLine(record);
     }
 
     @Override
@@ -93,8 +91,13 @@ public class SymptomSectionCommand extends AbstractSectionCommand<SymptomLog> {
     }
 
     @Override
-    protected void delete(Long userId, Integer profileId, Integer id) {
+    protected void delete(Integer userId, Integer profileId, Integer id) {
         symptomService.delete(userId, profileId, id);
+    }
+
+    private String symptomLine(SymptomLog record) {
+        return Dates.DATE_TIME.format(record.getProperties().getSymptomTime())
+                + " — " + description(record);
     }
 
     private String description(SymptomLog log) {

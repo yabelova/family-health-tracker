@@ -25,7 +25,7 @@ public class MedicationCourseService {
     private final MedicationCourseRepository repository;
     private final ProfileAccessGuard accessGuard;
 
-    public MedicationCourse save(Integer profileId, Long createdBy, MedicationCourseProperties properties) {
+    public MedicationCourse save(Integer profileId, Integer createdBy, MedicationCourseProperties properties) {
         accessGuard.check(createdBy, profileId);
         MedicationCourse course = MedicationCourse.builder()
                 .profileId(profileId)
@@ -37,7 +37,7 @@ public class MedicationCourseService {
         return repository.save(course);
     }
 
-    public List<MedicationCourse> listByProfile(Long userId, Integer profileId) {
+    public List<MedicationCourse> listByProfile(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileId(profileId);
     }
@@ -47,7 +47,7 @@ public class MedicationCourseService {
      * или завершившимся в пределах {@link #ACTIVE_GRACE_DAYS} (чтобы можно было
      * отметить прием задним числом).
      */
-    public List<MedicationCourse> listActiveByProfile(Long userId, Integer profileId) {
+    public List<MedicationCourse> listActiveByProfile(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileId(profileId).stream()
                 .filter(MedicationCourseService::isActive)
@@ -58,7 +58,7 @@ public class MedicationCourseService {
      * Активный курс по ID: должен существовать, принадлежать профилю и быть активным.
      * Возвращает {@code null}, если курс не найден, не для этого профиля или завершен.
      */
-    public MedicationCourse findActiveForProfileById(Long userId, Integer profileId, Integer id) {
+    public MedicationCourse findActiveForProfileById(Integer userId, Integer profileId, Integer id) {
         accessGuard.check(userId, profileId);
         MedicationCourse course = repository.findById(id).orElse(null);
         if (course == null || !course.getProfileId().equals(profileId) || !isActive(course)) {
@@ -67,7 +67,7 @@ public class MedicationCourseService {
         return course;
     }
 
-    public void delete(Long userId, Integer profileId, Integer id) {
+    public void delete(Integer userId, Integer profileId, Integer id) {
         accessGuard.check(userId, profileId);
         MedicationCourse course = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));

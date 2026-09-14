@@ -10,10 +10,9 @@ import com.yabelova.healthtracker.telegram.screen.RecordSectionScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.HtmlUtils;
-import com.yabelova.healthtracker.telegram.support.RecordDeleteOption;
+import com.yabelova.healthtracker.telegram.support.DeletionData;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Numbers;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.List;
@@ -21,8 +20,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Общая команда раздела записей (симптомы / курсы лечения). Реализует рендер
- * меню раздела, выгрузку и удаление по id.
+ * Общая команда раздела записей выбранного профиля (симптомы / курсы лечения / приёмы).
+ * Раздел — это набор действий с записями профиля: список, добавление, выгрузка, удаление.
+ * Класс реализует рендер меню раздела, выгрузку и удаление в контексте активного профиля.
  * <p>
  * Конкретный раздел наследует этот класс и задает только: callback-действия, чтение/удаление и форматирование.
  */
@@ -59,7 +59,7 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
     protected abstract CallbackAction exportAction();
 
     /**
-     * Callback: список записей для удаления.
+     * Callback: получить список записей для удаления.
      */
     protected abstract CallbackAction deleteAction();
 
@@ -74,43 +74,28 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
     protected abstract String sectionTitle();
 
     /**
-     * Подпись кнопки добавления в меню раздела (для приемов — «Отметить прием»).
-     */
-    protected String addLabel() {
-        return BotTexts.INLINE_BTN_SECTION_ADD;
-    }
-
-    /**
-     * Дополнительный блок перед заголовком раздела (пусто по умолчанию).
+     * Дополнительный блок в заголовке раздела.
      */
     protected String sectionPreview(User user, Profile profile) {
         return "";
     }
 
     /**
+     * Подпись кнопки добавления в меню раздела.
+     */
+    protected String addLabel() {
+        return BotTexts.INLINE_BTN_SECTION_ADD;
+    }
+
+    /**
      * Записи для выгрузки.
      */
-    protected abstract List<E> listForExport(Long userId, Integer profileId);
-
-    /**
-     * Записи для списка удаления (все).
-     */
-    protected abstract List<E> listForDelete(Long userId, Integer profileId);
-
-    /**
-     * id записи.
-     */
-    protected abstract Integer idOf(E record);
-
-    /**
-     * Короткая подпись кнопки удаления.
-     */
-    protected abstract String deleteLabel(E record);
+    protected abstract List<E> listForExport(Integer userId, Integer profileId);
 
     /**
      * Строка записи в выгрузке.
      */
-    protected abstract String formatExport(E record);
+    protected abstract String exportLine(E record);
 
     /**
      * Сообщение, если выгружать нечего.
@@ -118,9 +103,24 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
     protected abstract String exportEmpty();
 
     /**
-     * Удалить запись по id (проверяет принадлежность профилю).
+     * Записи для списка удаления.
      */
-    protected abstract void delete(Long userId, Integer profileId, Integer id);
+    protected abstract List<E> listForDelete(Integer userId, Integer profileId);
+
+    /**
+     * Текст кнопки удаления записи.
+     */
+    protected abstract String deleteLabel(E record);
+
+    /**
+     * id записи.
+     */
+    protected abstract Integer idOf(E record);
+
+    /**
+     * Удалить запись по id.
+     */
+    protected abstract void delete(Integer userId, Integer profileId, Integer id);
 
     @Override
     public Set<CallbackAction> callbackActions() {
@@ -134,97 +134,79 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
-            return null;
-        }
-
-        if (action == openAction()) {
-            showSection(user);
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return null;
         }
 
         try {
-            if (action == exportAction()) {
+            if (action == openAction()) {
+                showSection(user, profile);
+            } else if (action == exportAction()) {
                 renderExport(user, profile);
-                return null;
-            }
-            if (action == deleteAction()) {
+            } else if (action == deleteAction()) {
                 renderDeleteList(user, profile);
-                return null;
-            }
-            if (action == deleteSelectedAction()) {
+            } else if (action == deleteSelectedAction()) {
                 handleDeleteSelected(update, user, profile);
-                return null;
             }
         } catch (RecordOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
-            if (e.getError() == RecordOperationException.Error.PROFILE_ACCESS_DENIED) {
-                profileSelectionScreen.render(user);
-            } else {
-                renderDeleteList(user, profile);
-            }
-            return null;
+            handleSectionError(user, e);
         }
 
         return null;
     }
 
+    private void handleSectionError(User user, RecordOperationException e) {
+        if (e.getError() == RecordOperationException.Error.PROFILE_ACCESS_DENIED) {
+            reply.send(user, e.getMessage());
+            profileSelectionScreen.render(user);
+        } else {
+            sectionScreen.sendTextWithBack(user, HtmlUtils.escape(e.getMessage()), openAction());
+        }
+    }
+
     /**
-     * Показать меню раздела. Вызывается из callback'а открытия и из визарда после добавления.
+     * Открыть меню раздела для активного профиля.
      */
     public void showSection(User user) {
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(BotTexts.COMMON_FIRST_SELECT_PROFILE)
-                    .build());
+            reply.send(user, BotTexts.COMMON_FIRST_SELECT_PROFILE);
             return;
         }
         try {
-            String text = BotTexts.SECTION_PROFILE_HEADER.formatted(HtmlUtils.bold(profile.getName()));
-            String preview = sectionPreview(user, profile);
-            if (!preview.isEmpty()) {
-                text += "\n\n" + preview;
-            }
-            text += "\n\n" + sectionTitle();
-            sectionScreen.renderSection(user, text,
-                    addLabel(), addAction(), exportAction(), deleteAction());
+            showSection(user, profile);
         } catch (RecordOperationException e) {
-            reply.send(SendMessage.builder()
-                    .chatId(user.getId().toString())
-                    .text(e.getMessage())
-                    .build());
-            profileSelectionScreen.render(user);
+            handleSectionError(user, e);
         }
+    }
+
+    private void showSection(User user, Profile profile) {
+        sectionScreen.renderSection(user,
+                sectionTitle(), profile.getName(),
+                sectionPreview(user, profile),
+                addLabel(), addAction(), exportAction(), deleteAction());
     }
 
     private void renderExport(User user, Profile profile) {
         List<E> records = listForExport(user.getId(), profile.getId());
         if (records.isEmpty()) {
-            sectionScreen.renderExport(user, exportEmpty(), openAction());
+            sectionScreen.sendTextWithBack(user, exportEmpty(), openAction());
             return;
         }
         String head = BotTexts.EXPORT_HEAD.formatted(HtmlUtils.bold(profile.getName()));
         String body = records.stream()
-                .map(this::formatExport)
+                .map(record -> HtmlUtils.escape(exportLine(record)))
                 .collect(Collectors.joining("\n"));
-        sectionScreen.renderExport(user, head + "\n\n" + body, openAction());
+        sectionScreen.sendTextWithBack(user, head + "\n\n" + body, openAction());
     }
 
     private void renderDeleteList(User user, Profile profile) {
         List<E> records = listForDelete(user.getId(), profile.getId());
-        List<RecordDeleteOption> options = records.stream()
-                .map(record -> new RecordDeleteOption(idOf(record), deleteLabel(record)))
+        List<DeletionData> deletions = records.stream()
+                .map(record -> new DeletionData(idOf(record), deleteLabel(record)))
                 .toList();
-        String head = options.isEmpty() ? BotTexts.DELETE_RECORDS_EMPTY : BotTexts.DELETE_LIST_HEAD;
-        sectionScreen.renderDeleteList(user, head, options, deleteSelectedAction(), openAction());
+        String head = deletions.isEmpty() ? BotTexts.DELETE_RECORDS_EMPTY : BotTexts.DELETE_LIST_HEAD;
+        sectionScreen.renderDeleteList(user, head, deletions, deleteSelectedAction(), openAction());
     }
 
     private void handleDeleteSelected(Update update, User user, Profile profile) {
@@ -234,10 +216,7 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
             return;
         }
         delete(user.getId(), profile.getId(), id);
-        reply.send(SendMessage.builder()
-                .chatId(user.getId().toString())
-                .text(BotTexts.RECORD_DELETED)
-                .build());
+        reply.send(user, BotTexts.RECORD_DELETED);
         renderDeleteList(user, profile);
     }
 }
