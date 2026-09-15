@@ -1,5 +1,6 @@
 package com.yabelova.healthtracker.telegram;
 
+import com.yabelova.healthtracker.config.TelegramAccessConfig;
 import com.yabelova.healthtracker.domain.User;
 import com.yabelova.healthtracker.exception.RecordOperationException;
 import com.yabelova.healthtracker.service.UserService;
@@ -14,6 +15,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Маршрутизирует входящие Update к командам. Строит карты по явным ключам команд
@@ -25,16 +28,20 @@ public class BotDispatcher {
 
     private final UserService userService;
     private final ReplySender reply;
+    private final TelegramAccessConfig access;
 
     private final Map<String, BotCommand> textCommands = new HashMap<>();
     private final Map<CallbackAction, BotCommand> callbackCommands = new HashMap<>();
     private final Map<Integer, AwaitingRequest> awaitingInput = new HashMap<>();
+    private final Set<Long> notifiedBlocked = ConcurrentHashMap.newKeySet();
 
     public BotDispatcher(UserService userService,
                          ReplySender reply,
+                         TelegramAccessConfig access,
                          List<BotCommand> commands) {
         this.userService = userService;
         this.reply = reply;
+        this.access = access;
 
         commands.forEach(cmd -> {
             cmd.textKeys().forEach(key -> putText(key, cmd));
@@ -50,6 +57,15 @@ public class BotDispatcher {
         if (input == null) {
             return;
         }
+
+        if (!access.isAllowed(input.chatId())) {
+            if (notifiedBlocked.add(input.chatId())) {
+                reply.send(input.chatId(), BotTexts.COMMON_PRIVATE_BOT);
+            }
+            log.info("Пользователю запрещен доступ к боту: chat={} data={}", input.chatId(), input.text());
+            return;
+        }
+
         if (input.callback()) {
             reply.answerCallbackQuery(update.getCallbackQuery().getId());
             log.info("Обработан callback: chat={} data={}", input.chatId(), input.text());
@@ -62,7 +78,7 @@ public class BotDispatcher {
         BotCommand active = route.command();
 
         if (route.kind() == RouteKind.CALLBACK) {
-            // удаляем клавиатуру сообщения, с которого пришел клик — кнопки одноразовые
+            // удаляем кнопки сообщения, откуда пришел клик
             var message = update.getCallbackQuery().getMessage();
             if (message != null) {
                 reply.removeKeyboard(input.chatId(), message.getMessageId());

@@ -31,6 +31,13 @@ public class ReplySender {
         sendInternal(user, text, null, null);
     }
 
+    public void send(Long chatId, String text) {
+        send(SendMessage.builder()
+                .chatId(chatId.toString())
+                .text(text)
+                .build());
+    }
+
     public void send(User user, String text, ParseMode parseMode) {
         sendInternal(user, text, parseMode, null);
     }

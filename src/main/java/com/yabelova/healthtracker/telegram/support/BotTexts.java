@@ -68,6 +68,7 @@ public final class BotTexts {
 
     public static final String COMMON_FIRST_SELECT_PROFILE = "⚠️ Сначала выберите профиль";
     public static final String COMMON_UNKNOWN_COMMAND = "⚠️ Не понимаю эту команду. Воспользуйтесь кнопками меню ниже";
+    public static final String COMMON_PRIVATE_BOT = "🤖 Извините, бот пока в приватном доступе";
     public static final String PARTICIPANT_UNKNOWN = "пользователь";
     public static final String TRANSFER_TARGET_DATIVE = "участнику";
     public static final String PRIVACY_TRANSFER_TARGET_UNKNOWN = "пользователю";
