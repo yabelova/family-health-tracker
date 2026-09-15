@@ -49,14 +49,6 @@ public class ReplySender {
                 .build());
     }
 
-    public void answerCallbackQuery(String callbackQueryId, String text) {
-        send(AnswerCallbackQuery.builder()
-                .callbackQueryId(callbackQueryId)
-                .text(text)
-                .showAlert(false)
-                .build());
-    }
-
     public void removeKeyboard(Long chatId, Integer messageId) {
         try {
             bot.execute(EditMessageReplyMarkup.builder()

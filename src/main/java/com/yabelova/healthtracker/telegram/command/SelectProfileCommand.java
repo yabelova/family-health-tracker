@@ -43,7 +43,6 @@ public class SelectProfileCommand implements BotCommand {
     @Override
     public Object handleCallback(Update update, User user) {
         String data = update.getCallbackQuery().getData();
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         try {
             Integer profileId = Integer.valueOf(CallbackAction.payloadOf(data));

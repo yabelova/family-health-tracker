@@ -90,7 +90,6 @@ public class DataPrivacyCommand implements BotCommand {
     public Object handleCallback(Update update, User user, Object marker) {
         String data = update.getCallbackQuery().getData();
         CallbackAction action = CallbackAction.fromData(data);
-        reply.answerCallbackQuery(update.getCallbackQuery().getId(), BotTexts.DELETE_ALL_ANSWER);
 
         if (!(marker instanceof DeleteFlow flow)) {
             return null;

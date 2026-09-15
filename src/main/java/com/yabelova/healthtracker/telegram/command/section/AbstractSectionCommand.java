@@ -130,7 +130,6 @@ public abstract class AbstractSectionCommand<E> implements BotCommand {
     @Override
     public final Object handleCallback(Update update, User user, Object marker) {
         CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {

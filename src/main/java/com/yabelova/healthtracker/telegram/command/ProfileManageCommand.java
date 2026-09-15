@@ -63,7 +63,6 @@ public class ProfileManageCommand implements BotCommand {
     public Object handleCallback(Update update, User user) {
         String data = update.getCallbackQuery().getData();
         CallbackAction action = CallbackAction.fromData(data);
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         Profile profile = profileService.getActiveProfile(user);
         if (profile == null) {

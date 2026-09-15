@@ -95,7 +95,6 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
     @Override
     public final Object handleCallback(Update update, User user, Object marker) {
         CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         WizardMarker wizard = marker instanceof WizardMarker w ? w : null;
 

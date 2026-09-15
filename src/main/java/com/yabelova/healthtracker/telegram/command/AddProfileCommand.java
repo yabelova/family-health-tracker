@@ -55,8 +55,6 @@ public class AddProfileCommand implements BotCommand {
 
     @Override
     public Object handleCallback(Update update, User user) {
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
-
         reply.send(user, BotTexts.ADD_CODE_PROMPT);
 
         return CallbackAction.PROFILE_ADD_BY_CODE; // ожидаем следующий текст (код)

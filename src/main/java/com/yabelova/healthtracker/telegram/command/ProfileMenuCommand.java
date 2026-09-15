@@ -43,7 +43,6 @@ public class ProfileMenuCommand implements BotCommand {
 
     @Override
     public Object handleCallback(Update update, User user) {
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
         profileMenuScreen.render(user);
         return null;
     }

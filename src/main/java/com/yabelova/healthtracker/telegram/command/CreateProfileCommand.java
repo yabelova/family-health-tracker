@@ -47,8 +47,6 @@ public class CreateProfileCommand implements BotCommand {
 
     @Override
     public Object handleCallback(Update update, User user) {
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
-
         reply.send(user, BotTexts.CREATE_PROFILE_PROMPT);
 
         return CallbackAction.PROFILE_CREATE; // ожидаем следующий текст (имя)

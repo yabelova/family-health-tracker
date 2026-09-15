@@ -215,8 +215,6 @@ public final class BotTexts {
 
     // ===== ПРИВАТНОСТЬ / УДАЛЕНИЕ АККАУНТА =====
 
-    public static final String DELETE_ALL_ANSWER = "✅";
-
     public static final String DELETE_ALL_WARNING = """
             ⚠️ Будет удалена ВСЯ информация вашего аккаунта в боте: профили, записи и настройки, участие в общих профилях.
             Это действие необратимо.

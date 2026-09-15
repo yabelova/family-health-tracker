@@ -80,7 +80,6 @@ public class IntakeTakeCommand implements BotCommand {
     public Object handleCallback(Update update, User user, Object marker) {
         try {
             CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
-            reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
             if (action == CallbackAction.INTAKE_ADD) {
                 return start(user);

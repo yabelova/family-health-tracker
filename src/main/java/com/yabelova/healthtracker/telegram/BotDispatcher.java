@@ -51,6 +51,7 @@ public class BotDispatcher {
             return;
         }
         if (input.callback()) {
+            reply.answerCallbackQuery(update.getCallbackQuery().getId());
             log.info("Обработан callback: chat={} data={}", input.chatId(), input.text());
         } else {
             log.info("Обработан текст: chat={} len={} text={}", input.chatId(), input.text().length(), input.text());

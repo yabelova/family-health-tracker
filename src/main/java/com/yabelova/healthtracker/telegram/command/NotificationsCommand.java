@@ -60,7 +60,6 @@ public class NotificationsCommand implements BotCommand {
     @Override
     public Object handleCallback(Update update, User user) {
         CallbackAction action = CallbackAction.fromData(update.getCallbackQuery().getData());
-        reply.answerCallbackQuery(update.getCallbackQuery().getId());
 
         if (action == CallbackAction.NOTIFICATION_EDIT) {
             reply.send(user, BotTexts.NOTIFICATIONS_ENTER_TIME);
