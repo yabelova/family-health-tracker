@@ -39,7 +39,7 @@ public enum CallbackAction {
     INTAKE_DOSES("intake.doses"),
     INTAKE_TAKEN_AT("intake.taken-at"),
 
-    // Профиль — управление (меню владельца)
+    // Управление профилем (только для владельца)
     PROFILE_MANAGE("profile.manage"),
     PROFILE_SHARE("profile.share"),
     PROFILE_RENAME("profile.rename"),

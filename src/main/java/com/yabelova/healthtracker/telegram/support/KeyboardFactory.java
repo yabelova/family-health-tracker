@@ -273,7 +273,12 @@ public class KeyboardFactory {
     }
 
     private String courseMedicationLabel(MedicationCourse course) {
-        return course.getProperties().getMedication();
+        StringBuilder sb = new StringBuilder(course.getProperties().getMedication());
+        Integer remaining = course.remainingDoses();
+        if (remaining != null) {
+            sb.append(" (остаток ").append(remaining).append(")");
+        }
+        return sb.toString();
     }
 
     private boolean isBoolean(Class<?> type) {

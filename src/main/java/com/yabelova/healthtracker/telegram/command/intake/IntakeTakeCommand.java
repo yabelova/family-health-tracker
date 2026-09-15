@@ -1,6 +1,7 @@
 package com.yabelova.healthtracker.telegram.command.intake;
 
 import com.yabelova.healthtracker.domain.MedicationCourse;
+import com.yabelova.healthtracker.domain.MedicationIntake;
 import com.yabelova.healthtracker.domain.MedicationIntakeProperties;
 import com.yabelova.healthtracker.domain.Profile;
 import com.yabelova.healthtracker.domain.User;
@@ -20,16 +21,18 @@ import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Dates;
 import com.yabelova.healthtracker.util.Numbers;
 import com.yabelova.healthtracker.util.TimeZones;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 
 /**
  * Отметка приема лекарства — кастомный пошаговый флоу (не визард):
- * препарат → дозы → время → подтверждение. Состояние переносится через {@link IntakeFlowMarker}.
+ * препарат - дозы - время - подтверждение. Состояние переносится через {@link IntakeFlowMarker}.
  */
 @Component
 public class IntakeTakeCommand implements BotCommand {
@@ -130,7 +133,8 @@ public class IntakeTakeCommand implements BotCommand {
         return switch (action) {
             case INTAKE_COURSE -> selectCourse(user, flow, payload);
             case INTAKE_DOSES -> applyDoses(user, flow, payload);
-            case INTAKE_TAKEN_AT -> advance(user, flow.withTakenAt(LocalDateTime.now(TimeZones.DEFAULT)));
+            case INTAKE_TAKEN_AT ->
+                    advance(user, flow.withTakenAt(LocalDateTime.now(TimeZones.DEFAULT).truncatedTo(ChronoUnit.MINUTES)));
             default -> null;
         };
     }
@@ -194,10 +198,32 @@ public class IntakeTakeCommand implements BotCommand {
                 flow.medication(),
                 flow.takenAt(),
                 flow.doses());
-        intakeService.save(flow.profileId(), user.getId(), flow.courseId(), properties);
-        reply.send(user, BotTexts.INTAKE_SAVED);
+        try {
+            MedicationIntake intake = intakeService.save(flow.profileId(), user.getId(), flow.courseId(), properties);
+            reply.send(user, savedText(intake, user.getId(), flow.profileId(), flow.courseId()));
+        } catch (DuplicateKeyException e) {
+            reply.send(user, BotTexts.INTAKE_DUPLICATE);
+        }
         sectionCommand.showSection(user);
         return null;
+    }
+
+    private String savedText(MedicationIntake intake, Integer userId, Integer profileId, Integer courseId) {
+        if (courseId == null) {
+            return BotTexts.INTAKE_SAVED;
+        }
+        MedicationCourse course = courseService.findActiveForProfileById(userId, profileId, courseId);
+        if (course == null) {
+            return BotTexts.INTAKE_SAVED;
+        }
+        Integer remaining = course.remainingDoses();
+        if (remaining == null) {
+            return BotTexts.INTAKE_SAVED;
+        }
+        if (course.isOverrun()) {
+            return BotTexts.INTAKE_SAVED + "\n" + BotTexts.INTAKE_REMAINING_WARNING.formatted(0);
+        }
+        return BotTexts.INTAKE_SAVED + "\n" + BotTexts.INTAKE_REMAINING.formatted(remaining);
     }
 
     private Object retry(User user, IntakeFlowMarker flow) {

@@ -6,3 +6,12 @@ create table t_medication_intakes (
     created_at timestamp with time zone not null,
     properties jsonb not null default '{}'
 );
+
+-- Защита от двойной отметки одного и того же приема
+create unique index uq_med_intake_dedup
+    on t_medication_intakes (
+        profile_id,
+        course_id,
+        (properties ->> 'medication'),
+        (properties ->> 'takenAt')
+    ) nulls not distinct;

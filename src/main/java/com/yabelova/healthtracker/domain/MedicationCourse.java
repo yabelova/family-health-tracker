@@ -33,5 +33,27 @@ public class MedicationCourse {
     private MedicationCourseProperties properties;
 
     @Nullable
-    private Integer remainingDoses;
+    private Integer dosesTaken;
+
+    /**
+     * Остаток доз: вычисляется из упаковки и счетчика принятых доз
+     */
+    @Nullable
+    public Integer remainingDoses() {
+        if (properties == null || properties.getDosesPerPackage() == null) {
+            return null;
+        }
+        int taken = dosesTaken == null ? 0 : dosesTaken;
+        return Math.max(0, properties.getDosesPerPackage() - taken);
+    }
+
+    /**
+     * Перерасход: принятых доз больше, чем доз в упаковке
+     */
+    public boolean isOverrun() {
+        if (dosesTaken == null || properties == null || properties.getDosesPerPackage() == null) {
+            return false;
+        }
+        return dosesTaken > properties.getDosesPerPackage();
+    }
 }

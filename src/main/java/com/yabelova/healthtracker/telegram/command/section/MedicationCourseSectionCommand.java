@@ -102,8 +102,8 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
         if (properties.getDosesPerDay() != null) {
             sb.append(", ").append(properties.getDosesPerDay()).append(" р./день");
         }
-        if (record.getRemainingDoses() != null) {
-            sb.append(", остаток: ").append(record.getRemainingDoses());
+        if (record.remainingDoses() != null) {
+            sb.append(", остаток: ").append(record.remainingDoses());
         }
         return sb.toString();
     }

@@ -12,5 +12,5 @@ create table t_medication_courses (
     created_by int references t_users(id) on delete set null,
     created_at timestamp with time zone not null,
     properties jsonb not null default '{}',
-    remaining_doses int
+    doses_taken int not null
 );

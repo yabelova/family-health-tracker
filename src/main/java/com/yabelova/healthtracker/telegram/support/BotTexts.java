@@ -9,7 +9,7 @@ public final class BotTexts {
 
     public static final String DEVELOPER_CONTACT = "@yabelova";
 
-    // ===== REPLY-КНОПКИ (нижняя панель; также ключи маршрутизации) =====
+    // ===== REPLY-КНОПКИ (нижняя панель) =====
 
     public static final String REPLY_BTN_NOTIFICATIONS = "🔔 Уведомления";
     public static final String REPLY_BTN_SELECT_PROFILE = "👤 Выбор профиля";
@@ -157,6 +157,9 @@ public final class BotTexts {
     public static final String INTAKE_TODAY_LINE = "• 💊 %s (%s) — %d доз.";
 
     // Флоу отметки приема
+    public static final String INTAKE_DUPLICATE = "✅ Уже отмечено";
+    public static final String INTAKE_REMAINING = "Остаток доз: %d";
+    public static final String INTAKE_REMAINING_WARNING = "⚠️ Не хватает доз: остаток %d";
     public static final String INTAKE_STEP_MEDICATION_PROMPT = """
             Выберите препарат из активных курсов или введите название вручную:""";
     public static final String INTAKE_STEP_MEDICATION_NO_COURSES = "Активных курсов нет — введите название препарата:";

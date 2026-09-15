@@ -32,7 +32,7 @@ public class MedicationCourseService {
                 .createdBy(createdBy)
                 .createdAt(Instant.now())
                 .properties(properties)
-                .remainingDoses(properties.getDosesPerPackage())
+                .dosesTaken(0)
                 .build();
         return repository.save(course);
     }
