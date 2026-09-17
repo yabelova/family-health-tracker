@@ -55,7 +55,6 @@ public class KeyboardFactory {
         if (isOwner) {
             rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_MANAGE, CallbackAction.PROFILE_MANAGE.prefix())));
         }
-        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, CallbackAction.MAIN_MENU_ACTION.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
@@ -107,7 +106,6 @@ public class KeyboardFactory {
 
     /**
      * Экран «Управление профилем»: только для владельца
-     * Навигация — reply-кнопкой меню профиля
      */
     public InlineKeyboardMarkup manageMenu() {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -117,6 +115,7 @@ public class KeyboardFactory {
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_REVOKE, CallbackAction.PROFILE_REVOKE.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_TRANSFER, CallbackAction.PROFILE_TRANSFER.prefix())));
         rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_MENU_DELETE, CallbackAction.PROFILE_DELETE.prefix())));
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_SECTION_BACK, CallbackAction.MAIN_MENU_ACTION.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }

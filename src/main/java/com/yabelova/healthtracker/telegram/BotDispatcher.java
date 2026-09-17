@@ -9,7 +9,6 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.HashMap;
@@ -17,22 +16,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
- * Маршрутизирует входящие Update к командам. Строит карты по явным ключам команд
- * (тексты/команды и callback-действия), что делает маршрутизацию детерминированной
+ * Маршрутизирует входящие Update к командам.
+ * Строит карты по явным ключам команд (тексты/команды и callback-действия).
  */
-@Component
 @Slf4j
-public class BotDispatcher {
+public class BotDispatcher implements UpdateHandler {
 
     private final UserService userService;
     private final ReplySender reply;
     private final TelegramAccessConfig access;
 
-    private final Map<String, BotCommand> textCommands = new HashMap<>();
-    private final Map<CallbackAction, BotCommand> callbackCommands = new HashMap<>();
-    private final Map<Integer, AwaitingRequest> awaitingInput = new HashMap<>();
+    private final Map<String, BotCommand> textCommands;
+    private final Map<CallbackAction, BotCommand> callbackCommands;
+    private final Map<Integer, AwaitingRequest> awaitingInput = new ConcurrentHashMap<>();
     private final Set<Long> notifiedBlocked = ConcurrentHashMap.newKeySet();
 
     public BotDispatcher(UserService userService,
@@ -43,13 +42,10 @@ public class BotDispatcher {
         this.reply = reply;
         this.access = access;
 
-        commands.forEach(cmd -> {
-            cmd.textKeys().forEach(key -> putText(key, cmd));
-            cmd.callbackActions().forEach(action -> putCallback(action, cmd));
-        });
+        this.textCommands = buildCommandIndex(commands, BotCommand::textKeys);
+        this.callbackCommands = buildCommandIndex(commands, BotCommand::callbackActions);
 
-        log.info("Зарегистрировано команд: {} (тексты), {} (callback)",
-                textCommands.size(), callbackCommands.size());
+        log.info("Зарегистрировано команд: {} (тексты), {} (callback)", textCommands.size(), callbackCommands.size());
     }
 
     public void dispatch(Update update) {
@@ -107,16 +103,17 @@ public class BotDispatcher {
         }
     }
 
-    private void putText(String key, BotCommand command) {
-        if (textCommands.put(key, command) != null) {
-            throw new IllegalStateException("Дублирующийся текстовый ключ: " + key);
+    private <K> Map<K, BotCommand> buildCommandIndex(List<BotCommand> commands,
+                                                     Function<BotCommand, Set<K>> keysExtractor) {
+        Map<K, BotCommand> map = new HashMap<>();
+        for (BotCommand cmd : commands) {
+            for (K key : keysExtractor.apply(cmd)) {
+                if (map.put(key, cmd) != null) {
+                    throw new IllegalStateException("Дублирующийся ключ: " + key);
+                }
+            }
         }
-    }
-
-    private void putCallback(CallbackAction action, BotCommand command) {
-        if (callbackCommands.put(action, command) != null) {
-            throw new IllegalStateException("Дублирующееся callback-действие: " + action);
-        }
+        return Map.copyOf(map);
     }
 
     private TelegramInput parse(Update update) {
@@ -130,7 +127,7 @@ public class BotDispatcher {
             return new TelegramInput(m.getChatId(), m.getText(), false,
                     m.getFrom().getFirstName(), m.getFrom().getUserName());
         }
-        // Стикеры, фото, служебные апдейты (my_chat_member и т.д.) — молча игнорируем
+        // Стикеры, фото, служебные апдейты и т.д. - молча игнорируем
         return null;
     }
 

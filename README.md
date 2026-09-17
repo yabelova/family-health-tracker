@@ -5,14 +5,17 @@ Telegram-бот для контроля планов лечения и учёт�
 
 ## Стек
 
-Java 25, Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBots, Lombok.
+Java 25 (виртуальные потоки), Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBots, Lombok.
 
 ## Запуск
 
 1. Создайте файл `.env` на основе `docker-compose.yml` (переменные `DB_USER`, `DB_PASSWORD`, `DB_NAME`,
-   `DB_HOST`, `DB_PORT`, `TELEGRAM_BOT_NAME`, `TELEGRAM_BOT_TOKEN`).
+   `DB_HOST`, `DB_PORT`, `TELEGRAM_BOT_NAME`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALLOWED_IDS`).
 2. Запустите БД: `docker compose up -d`.
 3. Приложение поднимет схемы через Flyway автоматически.
+
+Бот отвечает только telegram-идентификаторам из `TELEGRAM_ALLOWED_IDS` (список id через запятую);
+пустой список полностью закрывает бота.
 
 ## Приватность и безопасность
 
@@ -21,6 +24,8 @@ Java 25, Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBot
   служебные маркеры флоу; данные пользователя в логи не попадают.
 * Секреты (токен бота) задаются через `.env` и не попадают в репозиторий; взаимодействие с Telegram —
   через long polling.
+* Сейчас доступ к боту ограничен whitelist'ом: бот отвечает только telegram-идентификаторам из `TELEGRAM_ALLOWED_IDS`
+  (пустой список закрывает бота полностью).
 * `/delete_all_data` — двухфазное удаление всего аккаунта: сначала пользователь передаёт владение или
   отзывает доступ по всем общим профилям, затем подтверждает словом «удалить»; весь план применяется
   атомарно одной транзакцией.
@@ -42,9 +47,14 @@ Java 25, Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBot
   (`UserService`, `ProfileService`, `NotificationService`, `SymptomService`, `MedicationCourseService`,
   `IntakeService`, `ProfileAccessGuard`).
 * **telegram** — UI-слой бота. Общается только с сервисами (не с репозиториями):
-  * `HealthTrackerBot` — тонкий: получает `Update` и передаёт в диспетчер.
+  * `HealthTrackerBot` — тонкий: получает `Update` и передаёт в `UpdateHandler`.
+  * `UpdateHandler` — интерфейс обработки входящего апдейта.
+  * `PerChatUpdateHandler` — декоратор над `BotDispatcher` (режим по умолчанию): очередь на каждый чат,
+    апдейты одного чата последовательны (виртуальный поток `task-chat-<id>`), разные чаты —
+    параллельны. Отключается флагом `app.parallel.enabled=false`.
   * `BotDispatcher` — маршрутизирует ввод к командам по явным ключам (детерминированно);
-    после клика съедает inline-клавиатуру сообщения (кнопки одноразовые).
+    после клика уничтожает inline-клавиатуру сообщения (кнопки одноразовые);
+    карты команд immutable, `awaitingInput` — потокобезопасный.
   * `command/*` — команды. Каждая команда: `StartCommand`, `SelectProfileCommand`,
     `CreateProfileCommand`, `AddProfileCommand`, `ProfileMenuCommand`, `ProfileManageCommand`,
     `NotificationsCommand`, `DataPrivacyCommand` (`/delete_all_data`), `HelpCommand` (`/help`).
@@ -67,10 +77,25 @@ Java 25, Gradle, Spring Boot (Spring Data JDBC), PostgreSQL, Flyway, TelegramBot
   диспетчер хранит их в мап по ключу ввода — текст команды либо callback-действие
   (`BotDispatcher`) — и вызывает по ключу;
   методы интерфейса — no-op по умолчанию (ISP): команда реализует только используемые.
-* **State** — текущее состояние диалога хранится в памяти (`BotDispatcher.awaitingInput`),
-  экран (меню профиля / выбор профиля) выводится из доменного контекста (`active_profile_id`).
+* **State** — текущее состояние диалога хранится в памяти (`BotDispatcher.awaitingInput`,
+  потокобезопасная карта), экран (меню профиля / выбор профиля) выводится из доменного контекста
+  (`active_profile_id`). Состояние живёт в маркерах флоу, а не в потоке: апдейты одного юзера
+  обрабатываются разными потоками, но продолжают одну анкету.
 * **Builder** — построение клавиатур и ответов через встроенные builder'ы Telegram API;
   сборка сущностей/DTO — средствами Lombok (`@Builder`).
+
+### Параллелизм
+
+Каждый чат обрабатывается в виртуальном потоке с собственной очередью: апдейты одного чата
+последовательны, разные чаты — параллельно. Весь ввод передаётся в `PerChatUpdateHandler`.
+
+Флаг `app.parallel.enabled=false` отключает параллелизм и возвращает синхронную обработку
+напрямую `BotDispatcher`.
+
+Для проверки параллелизма вживую есть временная демо-команда `/sleep` — она засыпает в потоке
+своего чата, остальные чаты продолжают отвечать. Демо включается и отключается флагом
+`app.demo.sleep.enabled` в `application.yaml` (длительность — `app.demo.sleep.seconds`).
+Для сравнения: с `app.parallel.enabled=false` тот же `/sleep` блокирует все чаты.
 
 ## Карта переходов (стейт-машина)
 
@@ -111,7 +136,8 @@ Reply-панель (2×2) фиксированная: «Меню профиля�
    │                                          «⚠️ Не хватает доз» при перерасходе, дубль — «✅ Уже отмечено») ──► [РАЗДЕЛ ЗАПИСЕЙ]
    │  wizard.retry ──► шаг 1; wizard.cancel ──► отмена ──► [РАЗДЕЛ ЗАПИСЕЙ]
 
-[УПРАВЛЕНИЕ ПРОФИЛЕМ]         (только владелец; навигация — reply-панель 2×2)
+[УПРАВЛЕНИЕ ПРОФИЛЕМ]         (только владелец; выход — инлайн-кнопка «↩️ Назад»)
+   │  inline: menu.main        ──► [МЕНЮ ПРОФИЛЯ]
    │  inline: profile.share    ──► создать код (8 симв., 72 ч, одноразовый) ──► показать ──► (этот же экран)
    │  inline: profile.rename   ──► ввод имени ──► переименовать ──► (этот же экран)
    │  inline: profile.revoke   ──► удалить связи MEMBER + неиспользованные коды ──► (этот же экран)

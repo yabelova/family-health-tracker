@@ -22,3 +22,11 @@ telegram:
     token: ${TELEGRAM_BOT_TOKEN}
   access:
     allowed-ids: ${TELEGRAM_ALLOWED_IDS:}
+
+app:
+  parallel:
+    enabled: true
+  demo:
+    sleep:
+      enabled: true
+      seconds: 30

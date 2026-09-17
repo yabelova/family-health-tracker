@@ -224,7 +224,9 @@ public class ProfileManageCommand implements BotCommand {
     }
 
     private void renderTransferChoice(User user, Profile profile) {
-        List<ProfileParticipant> participants = profileService.participants(profile.getId());
+        List<ProfileParticipant> participants = profileService.participants(profile.getId()).stream()
+                .filter(p -> !p.userId().equals(user.getId()))
+                .toList();
         if (participants.isEmpty()) {
             reply.send(user, BotTexts.TRANSFER_NO_PARTICIPANTS.formatted(HtmlUtils.bold(profile.getName())),
                     ParseMode.HTML);

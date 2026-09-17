@@ -7,7 +7,8 @@ public enum Commands {
 
     START("/start"),
     HELP("/help"),
-    DELETE_ALL_DATA("/delete_all_data");
+    DELETE_ALL_DATA("/delete_all_data"),
+    SLEEP("/sleep");
 
     private final String token;
 
