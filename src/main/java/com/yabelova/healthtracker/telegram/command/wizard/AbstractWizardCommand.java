@@ -30,13 +30,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Общий каркас пошаговой анкеты (визарда). Реализует весь флоу: список шагов
- * строится рефлексией из {@link #formClass()} один раз, обработка текста и
+ * Общий каркас пошаговой анкеты (визарда).
+ * <p>
+ * Реализует весь флоу: список шагов строится рефлексией из {@link #formClass()} один раз, обработка текста и
  * универсальных wizard-кнопок, подтверждение/отмена, экран итогов.
  * <p>
- * Конкретная анкета наследует этот класс и задает только: класс полей, callback
- * действия запуска, сохранение результата и тексты об успехе/отмене. Никакой
- * логики шагов в подклассе нет.
+ * Конкретная анкета наследует этот класс и задает только: класс полей, callback действия запуска, сохранение
+ * результата и тексты об успехе/отмене. Никакой логики шагов в подклассе нет.
  *
  * @param <P> класс со свойствами анкеты (поля, размеченные {@code @WizardField})
  */
@@ -68,7 +68,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
     protected abstract Class<P> formClass();
 
     /**
-     * Callback-действие кнопки, запускающей анкету (SYMPTOM_LOG / MEDICATION_COURSE / ...).
+     * Callback-действие кнопки, запускающей анкету.
      */
     protected abstract CallbackAction startCallbackAction();
 
@@ -109,7 +109,7 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
         return switch (action) {
             case WIZARD_CONFIRM -> confirm(user, wizard);
             case WIZARD_RETRY -> retry(user, wizard);
-            case WIZARD_CANCEL -> cancel(user, wizard);
+            case WIZARD_CANCEL -> cancel(user);
             case WIZARD_SKIP -> advance(user, wizard.withAnswer(currentField(wizard).fieldName(), null));
             case WIZARD_QUICK_SET -> quickSet(update, user, wizard);
             case WIZARD_BOOL_YES -> advance(user, wizard.withAnswer(currentField(wizard).fieldName(), Boolean.TRUE));
@@ -180,15 +180,15 @@ public abstract class AbstractWizardCommand<P> implements BotCommand {
         return reset;
     }
 
-    private Object cancel(User user, WizardMarker wizard) {
+    private Object cancel(User user) {
         reply.send(user, cancelledMessage());
         sectionCommand.showSection(user);
         return null;
     }
 
     /**
-     * Быстрая кнопка шага анкеты (Сегодня/Вчера/Завтра/Сейчас): подставляет
-     * текущую дату/время в зависимости от типа поля текущего шага.
+     * Быстрая кнопка шага анкеты (Сегодня/Вчера/Завтра/Сейчас): подставляет текущую дату/время в зависимости от типа
+     * поля текущего шага.
      */
     private Object quickSet(Update update, User user, WizardMarker wizard) {
         WizardStep step = currentField(wizard);

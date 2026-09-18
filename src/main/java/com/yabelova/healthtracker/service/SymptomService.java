@@ -7,6 +7,7 @@ import com.yabelova.healthtracker.repository.SymptomLogRepository;
 import com.yabelova.healthtracker.util.TimeZones;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,8 +20,9 @@ public class SymptomService {
     private final SymptomLogRepository repository;
     private final ProfileAccessGuard accessGuard;
 
+    @Transactional
     public SymptomLog save(Integer profileId, Integer createdBy, SymptomLogProperties properties) {
-        accessGuard.check(createdBy, profileId);
+        accessGuard.checkAndLock(createdBy, profileId);
         SymptomLog log = SymptomLog.builder()
                 .profileId(profileId)
                 .createdBy(createdBy)
@@ -41,8 +43,9 @@ public class SymptomService {
                 LocalDate.now(TimeZones.DEFAULT).minusDays(7).atStartOfDay());
     }
 
+    @Transactional
     public void delete(Integer userId, Integer profileId, Integer id) {
-        accessGuard.check(userId, profileId);
+        accessGuard.checkAndLock(userId, profileId);
         SymptomLog log = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));
         if (!log.getProfileId().equals(profileId)) {

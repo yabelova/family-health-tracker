@@ -1,16 +1,23 @@
 package com.yabelova.healthtracker.telegram.command;
 
 import com.yabelova.healthtracker.domain.User;
+import com.yabelova.healthtracker.service.DailyPlanBuilder;
+import com.yabelova.healthtracker.service.DailyPlanBuilder.DailyPlan;
 import com.yabelova.healthtracker.service.NotificationService;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.screen.NotificationsScreen;
 import com.yabelova.healthtracker.telegram.support.BotTexts;
+import com.yabelova.healthtracker.telegram.support.DailyPlanFormatter;
+import com.yabelova.healthtracker.telegram.support.KeyboardFactory;
+import com.yabelova.healthtracker.telegram.support.ParseMode;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
+import com.yabelova.healthtracker.util.TimeZones;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Set;
@@ -21,7 +28,10 @@ import java.util.Set;
 public class NotificationsCommand implements BotCommand {
 
     private final NotificationService notificationService;
+    private final DailyPlanBuilder planBuilder;
     private final NotificationsScreen notificationsScreen;
+    private final DailyPlanFormatter planFormatter;
+    private final KeyboardFactory keyboard;
     private final ReplySender reply;
 
     @Override
@@ -31,7 +41,10 @@ public class NotificationsCommand implements BotCommand {
 
     @Override
     public Set<CallbackAction> callbackActions() {
-        return Set.of(CallbackAction.NOTIFICATION_EDIT, CallbackAction.NOTIFICATION_DISABLE);
+        return Set.of(CallbackAction.NOTIFICATION_EDIT,
+                CallbackAction.NOTIFICATION_DISABLE,
+                CallbackAction.NOTIFICATION_EXPORT,
+                CallbackAction.NOTIFICATION_BACK);
     }
 
     @Override
@@ -67,6 +80,19 @@ public class NotificationsCommand implements BotCommand {
 
         } else if (action == CallbackAction.NOTIFICATION_DISABLE) {
             notificationService.disable(user);
+            notificationsScreen.render(user);
+            return null;
+
+        } else if (action == CallbackAction.NOTIFICATION_EXPORT) {
+            DailyPlan plan = planBuilder.build(user, LocalDate.now(TimeZones.DEFAULT));
+            String text = plan.profiles().isEmpty()
+                    ? BotTexts.DAILY_PLAN_EMPTY
+                    : planFormatter.format(plan);
+            reply.send(user, text, ParseMode.HTML,
+                    keyboard.backToSection(CallbackAction.NOTIFICATION_BACK));
+            return null; // ручная выгрузка не помечает пользователя «отправленным»
+
+        } else if (action == CallbackAction.NOTIFICATION_BACK) {
             notificationsScreen.render(user);
             return null;
         }

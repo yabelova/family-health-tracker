@@ -180,6 +180,8 @@ public class KeyboardFactory {
             rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_NOTIFICATION_DISABLE,
                     CallbackAction.NOTIFICATION_DISABLE.prefix())));
         }
+        rows.add(List.of(inlineButton(BotTexts.INLINE_BTN_NOTIFICATION_EXPORT,
+                CallbackAction.NOTIFICATION_EXPORT.prefix())));
 
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }

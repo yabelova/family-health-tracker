@@ -51,6 +51,8 @@ public enum CallbackAction {
     // Уведомления
     NOTIFICATION_EDIT("notification.edit"),
     NOTIFICATION_DISABLE("notification.disable"),
+    NOTIFICATION_EXPORT("notification.export"),
+    NOTIFICATION_BACK("notification.back"),
 
     // Приватность (передача/отзыв данных при удалении аккаунта)
     PRIVACY_TRANSFER("privacy.transfer"),

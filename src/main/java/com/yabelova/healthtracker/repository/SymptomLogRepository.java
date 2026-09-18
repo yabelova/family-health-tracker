@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-@SuppressWarnings("NullableProblems")
 public interface SymptomLogRepository extends ListCrudRepository<SymptomLog, Integer> {
 
     List<SymptomLog> findByProfileId(Integer profileId);

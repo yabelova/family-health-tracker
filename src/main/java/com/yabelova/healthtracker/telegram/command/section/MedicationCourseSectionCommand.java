@@ -10,8 +10,10 @@ import com.yabelova.healthtracker.telegram.support.BotTexts;
 import com.yabelova.healthtracker.telegram.support.CallbackAction;
 import com.yabelova.healthtracker.telegram.support.ReplySender;
 import com.yabelova.healthtracker.util.Dates;
+import com.yabelova.healthtracker.util.TimeZones;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -60,7 +62,7 @@ public class MedicationCourseSectionCommand extends AbstractSectionCommand<Medic
 
     @Override
     protected List<MedicationCourse> listForExport(Integer userId, Integer profileId) {
-        return courseService.listByProfile(userId, profileId);
+        return courseService.listActiveOrUpcoming(userId, profileId, LocalDate.now(TimeZones.DEFAULT));
     }
 
     @Override

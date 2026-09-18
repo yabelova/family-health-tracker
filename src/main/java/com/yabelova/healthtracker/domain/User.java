@@ -10,6 +10,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Table("t_users")
@@ -36,6 +37,12 @@ public class User {
 
     @Nullable
     private LocalTime notificationTime;
+
+    /**
+     * Дата последней отправки ежедневного напоминания.
+     */
+    @Nullable
+    private LocalDate lastNotifiedDate;
 
     @Nullable
     private Instant createdAt;

@@ -24,14 +24,14 @@ public class IntakeService {
     private final ProfileAccessGuard accessGuard;
 
     /**
-     * Сохраняет прием и увеличивает счетчик доз курса.
+     * Сохраняет прием и увеличивает счетчик доз курса, если курс активен на дату приема.
      */
     @Transactional
-    public MedicationIntake save(Integer profileId, Integer createdBy, Integer courseId,
+    public IntakeSaveResult save(Integer profileId, Integer createdBy, Integer courseId,
                                  MedicationIntakeProperties properties) {
-        accessGuard.check(createdBy, profileId);
+        accessGuard.checkAndLock(createdBy, profileId);
 
-        MedicationCourse course = findCourseForProfile(courseId, profileId);
+        MedicationCourse course = findCourseForProfile(courseId, profileId, properties.getTakenAt().toLocalDate());
         MedicationIntake intake = MedicationIntake.builder()
                 .profileId(profileId)
                 .courseId(course != null ? courseId : null)
@@ -44,8 +44,10 @@ public class IntakeService {
 
         if (course != null) {
             courseRepository.addDosesTaken(course.getId(), properties.getDoses());
+            course.setDosesTaken((course.getDosesTaken() == null ? 0 : course.getDosesTaken())
+                    + properties.getDoses());
         }
-        return intake;
+        return new IntakeSaveResult(intake, course);
     }
 
     public List<MedicationIntake> listByProfile(Integer userId, Integer profileId) {
@@ -67,7 +69,7 @@ public class IntakeService {
 
     @Transactional
     public void delete(Integer userId, Integer profileId, Integer id) {
-        accessGuard.check(userId, profileId);
+        accessGuard.checkAndLock(userId, profileId);
         MedicationIntake intake = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));
         if (!intake.getProfileId().equals(profileId)) {
@@ -81,12 +83,19 @@ public class IntakeService {
         }
     }
 
-    private MedicationCourse findCourseForProfile(Integer courseId, Integer profileId) {
+    /**
+     * Резолв курса для приема с блокировкой строки внутри транзакции записи: параллельное удаление курса ждет
+     * завершения записи вместо падения по FK.
+     */
+    private MedicationCourse findCourseForProfile(Integer courseId, Integer profileId, LocalDate day) {
         if (courseId == null) {
             return null;
         }
-        return courseRepository.findById(courseId)
-                .filter(course -> course.getProfileId().equals(profileId))
+        return courseRepository.findIntakeCourseForDateWithLock(courseId, profileId, day,
+                MedicationCourseService.ACTIVE_GRACE_DAYS)
                 .orElse(null);
+    }
+
+    public record IntakeSaveResult(MedicationIntake intake, MedicationCourse course) {
     }
 }

@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.List;
 
 @Repository
-@SuppressWarnings("NullableProblems")
 public interface ProfileRepository extends ListCrudRepository<Profile, Integer> {
 
     @Query("""
@@ -63,6 +62,9 @@ public interface ProfileRepository extends ListCrudRepository<Profile, Integer> 
                        @Param("profileId") Integer profileId,
                        @Param("role") UserRole role);
 
+    /**
+     * Проверка, что профиль доступен юзеру.
+     */
     @Query("""
                 SELECT EXISTS(
                     SELECT 1 FROM tr_user_profile
@@ -71,6 +73,19 @@ public interface ProfileRepository extends ListCrudRepository<Profile, Integer> 
             """)
     boolean isLinked(@Param("userId") Integer userId,
                      @Param("profileId") Integer profileId);
+
+    /**
+     * Проверка, что профиль доступен юзеру, с блокировкой строки внутри транзакции записи.
+     */
+    @Query("""
+                SELECT EXISTS(
+                    SELECT 1 FROM tr_user_profile
+                    WHERE user_id = :userId AND profile_id = :profileId
+                    FOR UPDATE
+                )
+            """)
+    boolean isLinkedWithLock(@Param("userId") Integer userId,
+                             @Param("profileId") Integer profileId);
 
     @Modifying
     @Query("""

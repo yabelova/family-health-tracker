@@ -4,9 +4,9 @@ import com.yabelova.healthtracker.domain.MedicationCourse;
 import com.yabelova.healthtracker.domain.MedicationCourseProperties;
 import com.yabelova.healthtracker.exception.RecordOperationException;
 import com.yabelova.healthtracker.repository.MedicationCourseRepository;
-import com.yabelova.healthtracker.util.TimeZones;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -17,16 +17,16 @@ import java.util.List;
 public class MedicationCourseService {
 
     /**
-     * Курс остается доступным для отметки приема еще сколько дней после окончания
-     * (прием задним числом).
+     * Курс остается доступным для отметки приема еще сколько дней после окончания (отметка приема задним числом).
      */
-    private static final long ACTIVE_GRACE_DAYS = 7;
+    public static final int ACTIVE_GRACE_DAYS = 7;
 
     private final MedicationCourseRepository repository;
     private final ProfileAccessGuard accessGuard;
 
+    @Transactional
     public MedicationCourse save(Integer profileId, Integer createdBy, MedicationCourseProperties properties) {
-        accessGuard.check(createdBy, profileId);
+        accessGuard.checkAndLock(createdBy, profileId);
         MedicationCourse course = MedicationCourse.builder()
                 .profileId(profileId)
                 .createdBy(createdBy)
@@ -37,56 +37,47 @@ public class MedicationCourseService {
         return repository.save(course);
     }
 
+    /**
+     * Все курсы профиля.
+     */
     public List<MedicationCourse> listByProfile(Integer userId, Integer profileId) {
         accessGuard.check(userId, profileId);
         return repository.findByProfileId(profileId);
     }
 
     /**
-     * Активные курсы профиля: без ограничения дней, с еще не завершившимся курсом
-     * или завершившимся в пределах {@link #ACTIVE_GRACE_DAYS} (чтобы можно было
-     * отметить прием задним числом).
+     * Курсы профиля для экспорта: активные и будущие.
      */
-    public List<MedicationCourse> listActiveByProfile(Integer userId, Integer profileId) {
+    public List<MedicationCourse> listActiveOrUpcoming(Integer userId, Integer profileId, LocalDate day) {
         accessGuard.check(userId, profileId);
-        return repository.findByProfileId(profileId).stream()
-                .filter(MedicationCourseService::isActive)
-                .toList();
+        return repository.findActiveOrUpcomingByProfileId(profileId, day);
     }
 
     /**
-     * Активный курс по ID: должен существовать, принадлежать профилю и быть активным.
-     * Возвращает {@code null}, если курс не найден, не для этого профиля или завершен.
+     * Курсы профиля для кнопок приема: активные на {@code day} + завершившиеся в пределах {@link ACTIVE_GRACE_DAYS} дней
+     * (отметка приема задним числом).
      */
-    public MedicationCourse findActiveForProfileById(Integer userId, Integer profileId, Integer id) {
+    public List<MedicationCourse> listIntakeOptions(Integer userId, Integer profileId, LocalDate day) {
         accessGuard.check(userId, profileId);
-        MedicationCourse course = repository.findById(id).orElse(null);
-        if (course == null || !course.getProfileId().equals(profileId) || !isActive(course)) {
-            return null;
-        }
-        return course;
+        return repository.findIntakeOptionsByProfileId(profileId, day, ACTIVE_GRACE_DAYS);
     }
 
+    /**
+     * Курс для заполнения анкеты приема после клика по кнопке.
+     * Без гарда - проверки будут выполнены в конце визарда при подтверждении.
+     */
+    public MedicationCourse findForIntakeName(Integer courseId) {
+        return repository.findById(courseId).orElse(null);
+    }
+
+    @Transactional
     public void delete(Integer userId, Integer profileId, Integer id) {
-        accessGuard.check(userId, profileId);
+        accessGuard.checkAndLock(userId, profileId);
         MedicationCourse course = repository.findById(id)
                 .orElseThrow(() -> new RecordOperationException(RecordOperationException.Error.RECORD_NOT_FOUND));
         if (!course.getProfileId().equals(profileId)) {
             throw new RecordOperationException(RecordOperationException.Error.RECORD_NOT_LINKED);
         }
         repository.deleteById(id);
-    }
-
-    private static boolean isActive(MedicationCourse course) {
-        MedicationCourseProperties properties = course.getProperties();
-        if (properties == null || properties.getDaysCount() == null) {
-            return true;
-        }
-        LocalDate startDate = properties.getStartDate();
-        if (startDate == null) {
-            return true;
-        }
-        LocalDate endDate = startDate.plusDays(properties.getDaysCount());
-        return !endDate.isBefore(LocalDate.now(TimeZones.DEFAULT).minusDays(ACTIVE_GRACE_DAYS));
     }
 }

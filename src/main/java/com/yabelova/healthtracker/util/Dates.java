@@ -24,9 +24,9 @@ public final class Dates {
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     /**
-     * Время: {@code чч:мм}; парсит также {@code 8:30} (час без ведущего нуля)
+     * Время: {@code H:ММ}; парсит также {@code 08:30} (ведущий ноль опционален)
      */
-    public static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+    public static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("H:mm");
 
     /**
      * Короткая дата и время для ввода приема: {@code дд.мм чч:мм}; год подставляется текущий

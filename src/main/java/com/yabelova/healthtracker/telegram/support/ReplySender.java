@@ -42,6 +42,13 @@ public class ReplySender {
         sendInternal(user, text, parseMode, null);
     }
 
+    /**
+     * Отправка с результатом доставки: {@code false}, если Telegram-API вызов упал.
+     */
+    public boolean trySend(User user, String text, ParseMode parseMode) {
+        return sendInternal(user, text, parseMode, null);
+    }
+
     public void send(User user, String text, ReplyKeyboard replyMarkup) {
         sendInternal(user, text, null, replyMarkup);
     }
@@ -70,8 +77,8 @@ public class ReplySender {
         }
     }
 
-    private void sendInternal(User user, String text, @Nullable ParseMode parseMode, @Nullable ReplyKeyboard replyMarkup) {
-        send(SendMessage.builder()
+    private boolean sendInternal(User user, String text, @Nullable ParseMode parseMode, @Nullable ReplyKeyboard replyMarkup) {
+        return send(SendMessage.builder()
                 .chatId(user.getTelegramId().toString())
                 .text(text)
                 .parseMode(parseMode == null ? null : parseMode.name())
@@ -79,11 +86,13 @@ public class ReplySender {
                 .build());
     }
 
-    private <T extends Serializable> void send(BotApiMethod<T> method) {
+    private <T extends Serializable> boolean send(BotApiMethod<T> method) {
         try {
             bot.execute(method);
+            return true;
         } catch (TelegramApiException e) {
             log.error("Ошибка отправки Telegram-метода {}: ", method.getClass().getSimpleName(), e);
+            return false;
         }
     }
 }

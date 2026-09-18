@@ -56,4 +56,19 @@ public class MedicationCourse {
         }
         return dosesTaken > properties.getDosesPerPackage();
     }
+
+    /**
+     * Пересечен ли нижний порог нехватки {@code dosesPerDay}: добавление {@code dosesAdded}
+     * доз переводит остаток упаковки из зоны выше порога в зону порога и ниже.
+     * Повторные добавления в зоне нехватки возвращают {@code false}.
+     */
+    public boolean isStockThresholdCrossedBy(int dosesAdded) {
+        if (properties == null || properties.getDosesPerPackage() == null) {
+            return false;
+        }
+        int threshold = properties.getDosesPerDay() != null ? properties.getDosesPerDay() : 1;
+        int taken = dosesTaken == null ? 0 : dosesTaken;
+        int remaining = properties.getDosesPerPackage() - taken;
+        return remaining <= threshold && remaining + dosesAdded > threshold;
+    }
 }

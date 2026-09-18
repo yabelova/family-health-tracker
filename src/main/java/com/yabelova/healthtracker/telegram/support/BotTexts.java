@@ -32,7 +32,7 @@ public final class BotTexts {
 
     // Разделы записей
     public static final String INLINE_BTN_SECTION_ADD = "➕ Добавить";
-    public static final String INLINE_BTN_SECTION_EXPORT = "📤 Выгрузить";
+    public static final String INLINE_BTN_SECTION_EXPORT = "📋 Выгрузить";
     public static final String INLINE_BTN_SECTION_DELETE = "🗑 Удалить";
     public static final String INLINE_BTN_SECTION_BACK = "↩️ Назад";
 
@@ -51,6 +51,7 @@ public final class BotTexts {
     public static final String INLINE_BTN_NOTIFICATION_EDIT = "✏️ Изменить время";
     public static final String INLINE_BTN_NOTIFICATION_SET = "⏰ Ввести время";
     public static final String INLINE_BTN_NOTIFICATION_DISABLE = "🚫 Выключить уведомления";
+    public static final String INLINE_BTN_NOTIFICATION_EXPORT = "📋 План на сегодня";
 
     // Визард (шаги анкеты и подтверждение)
     public static final String INLINE_BTN_WIZARD_CONFIRM = "✅ Подтвердить";
@@ -182,7 +183,7 @@ public final class BotTexts {
     public static final String INTAKE_INVALID_INPUT = "⚠️ Неверный ввод. Попробуйте ещё раз:";
     public static final String INTAKE_CONFIRM_TEXT = "📋 Проверьте данные приёма:\n\n%s\n\nПодтверждаете?";
 
-    public static final String EXPORT_HEAD = "📤 Записи профиля %s:";
+    public static final String EXPORT_HEAD = "📋 Записи профиля %s:";
     public static final String DELETE_RECORDS_EMPTY = "Записей для удаления нет";
     public static final String DELETE_LIST_HEAD = "🗑 Выберите запись для удаления:";
     public static final String RECORD_DELETED = "✅ Запись удалена";
@@ -211,8 +212,15 @@ public final class BotTexts {
 
     public static final String NOTIFICATIONS_TIME_UNSET = "не задано";
     public static final String NOTIFICATIONS_CURRENT = "🔔 Текущее время напоминаний: %s.\n\nВыберите действие:";
-    public static final String NOTIFICATIONS_ENTER_TIME = "Введите время для ежедневных уведомлений в формате Ч:ММ (например, 8:30 или 08:30):";
+    public static final String NOTIFICATIONS_ENTER_TIME = "Введите время для ежедневных уведомлений в формате Ч:ММ (например, 8:30 или 08:30):\n\nФактическое время уведомления может отличаться на ±1–2 минуты";
     public static final String NOTIFICATIONS_INVALID_FORMAT = "⚠️ Неверный формат! Введите время в формате Ч:ММ (например, 8:30 или 08:30):";
+    public static final String NOTIFICATION_LOW_STOCK = "⚠️ У профиля %s заканчивается препарат «%s» — осталось %d доз";
+
+    // План на сегодня
+    public static final String DAILY_PLAN_HEADER = "На сегодня запланирован приём:";
+    public static final String DAILY_PLAN_PROFILE = "• %s:\n  %s";
+    public static final String DAILY_PLAN_COURSE_LINE = "%s — %d доз";
+    public static final String DAILY_PLAN_EMPTY = "На сегодня ничего не запланировано";
 
     // ===== ПРИВАТНОСТЬ / УДАЛЕНИЕ АККАУНТА =====
 
