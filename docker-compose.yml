@@ -11,10 +11,30 @@ services:
     volumes:
       - health_tracker_pgdata:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d health_tracker_db"]
+      test: [ "CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  app:
+    build: .
+    container_name: health_tracker_app
+    depends_on:
+      health_tracker_db:
+        condition: service_healthy
+    environment:
+      DB_HOST: health_tracker_db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      TELEGRAM_BOT_NAME: ${TELEGRAM_BOT_NAME}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_IDS: ${TELEGRAM_ALLOWED_IDS}
+      TZ: Europe/Moscow
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
 
 volumes:
   health_tracker_pgdata:

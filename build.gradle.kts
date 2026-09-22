@@ -5,7 +5,11 @@ plugins {
 }
 
 group = "com.yabelova"
-version = "0.0.1-SNAPSHOT"
+version = "1.0.1"
+
+springBoot {
+	buildInfo {}
+}
 
 java {
 	toolchain {
@@ -18,10 +22,12 @@ repositories {
 }
 
 dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-cache")
 	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
 	implementation("org.springframework.boot:spring-boot-starter-jackson")
+	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
 	compileOnly("org.projectlombok:lombok")

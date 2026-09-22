@@ -1,0 +1,12 @@
+.git
+.gitignore
+.gradle
+.idea
+build
+notes
+*.iml
+*.ipr
+*.iws
+Dockerfile
+docker-compose.yml
+.env

@@ -58,15 +58,15 @@ public class BotDispatcher implements UpdateHandler {
             if (notifiedBlocked.add(input.chatId())) {
                 reply.send(input.chatId(), BotTexts.COMMON_PRIVATE_BOT);
             }
-            log.info("Пользователю запрещен доступ к боту: chat={} data={}", input.chatId(), input.text());
+            log.info("Пользователю запрещен доступ к боту: chat={}", input.chatId());
             return;
         }
 
         if (input.callback()) {
             reply.answerCallbackQuery(update.getCallbackQuery().getId());
-            log.info("Обработан callback: chat={} data={}", input.chatId(), input.text());
+            log.info("Обработан callback: chat={} action={}", input.chatId(), actionOf(input.text()));
         } else {
-            log.info("Обработан текст: chat={} len={} text={}", input.chatId(), input.text().length(), input.text());
+            log.info("Обработан текст: chat={} len={}", input.chatId(), input.text().length());
         }
         User user = getOrCreateUser(input);
 
@@ -204,6 +204,10 @@ public class BotDispatcher implements UpdateHandler {
 
     private void replyUnexpected(User user) {
         reply.send(user, BotTexts.COMMON_UNKNOWN_COMMAND);
+    }
+
+    private String actionOf(String data) {
+        return data.contains(":") ? data.substring(0, data.indexOf(':')) : data;
     }
 
     private String textOf(Update update) {
