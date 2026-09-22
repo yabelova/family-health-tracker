@@ -1,11 +1,11 @@
 package com.yabelova.healthtracker.wizard;
 
 import com.yabelova.healthtracker.util.Dates;
+import com.yabelova.healthtracker.util.Numbers;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Set;
 
 /**
@@ -43,20 +43,16 @@ public final class WizardValidator {
             return null;
         }
         String trimmed = input.trim();
-        try {
-            return switch (type) {
-                case Class<?> c when c == String.class -> trimmed;
-                case Class<?> c when c == LocalDateTime.class -> Dates.parseLocalDateTime(trimmed);
-                case Class<?> c when c == LocalDate.class -> Dates.parseLocalDate(trimmed);
-                case Class<?> c when c == LocalTime.class -> LocalTime.parse(trimmed, Dates.TIME);
-                case Class<?> c when c == Integer.class || c == int.class -> Integer.parseInt(trimmed);
-                case Class<?> c when c == Double.class || c == double.class -> Double.parseDouble(trimmed);
-                case Class<?> c when c == Boolean.class || c == boolean.class -> null;
-                default -> null;
-            };
-        } catch (NumberFormatException | DateTimeParseException e) {
-            return null;
-        }
+        return switch (type) {
+            case Class<?> c when c == String.class -> trimmed;
+            case Class<?> c when c == LocalDateTime.class -> Dates.parseLocalDateTime(trimmed);
+            case Class<?> c when c == LocalDate.class -> Dates.parseLocalDate(trimmed);
+            case Class<?> c when c == LocalTime.class -> Dates.parseLocalTime(trimmed);
+            case Class<?> c when c == Integer.class || c == int.class -> Numbers.parseInt(trimmed);
+            case Class<?> c when c == Double.class || c == double.class -> Numbers.parseDouble(trimmed);
+            case Class<?> c when c == Boolean.class || c == boolean.class -> null;
+            default -> null;
+        };
     }
 
     /**

@@ -1,10 +1,9 @@
 package com.yabelova.healthtracker;
 
+import com.yabelova.healthtracker.integration.AbstractContainerIntTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class FamilyHealthTrackerApplicationTests {
+class FamilyHealthTrackerApplicationTests extends AbstractContainerIntTest {
 
 	@Test
 	void contextLoads() {

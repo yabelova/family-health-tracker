@@ -1,0 +1,5 @@
+telegram:
+  bot:
+    enabled: false
+    name: test-bot
+    token: test-token

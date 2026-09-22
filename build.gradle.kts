@@ -38,6 +38,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-cache-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
+	testImplementation("org.testcontainers:postgresql:1.20.4")
+	testImplementation("org.testcontainers:junit-jupiter:1.20.4")
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")

@@ -108,4 +108,21 @@ public final class Dates {
             return null;
         }
     }
+
+    /**
+     * Гибкий разбор времени для ввода записей. {@code чч:мм}, ведущий ноль опционален.
+     *
+     * @return {@link LocalTime} или {@code null}, если строка не разобрана
+     */
+    public static LocalTime parseLocalTime(String input) {
+        if (input == null || input.isBlank()) {
+            return null;
+        }
+        String trimmed = input.trim();
+        try {
+            return LocalTime.parse(trimmed, TIME);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
 }
