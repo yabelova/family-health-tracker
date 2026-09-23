@@ -23,7 +23,7 @@ public class HelpCommand implements BotCommand {
 
     @Override
     public Object handleText(Update update, User user) {
-        reply.send(user, BotTexts.HELP);
+        reply.send(user, BotTexts.HELP.formatted(BotTexts.DEVELOPER_CONTACT));
         return null;
     }
 }

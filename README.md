@@ -31,7 +31,7 @@ Lombok.
 
 ## Тесты
 
-`gradlew.bat test` — юнит- и интеграционные тесты (Testcontainers); интеграционные используютодноразовый PostgreSQL в
+`gradlew.bat test` — юнит- и интеграционные тесты (Testcontainers); интеграционные используют одноразовый PostgreSQL в
 Docker и требуют запущенного Docker.
 
 ## Приватность и безопасность

@@ -46,6 +46,15 @@ public class PerChatUpdateHandler implements UpdateHandler {
         }
     }
 
+    private void submitProcessQueue(Long chatId, ChatState state) {
+        try {
+            chatTaskExecutor.submit(() -> processQueue(chatId, state));
+        } catch (RejectedExecutionException e) {
+            // executor закрыт (shutdown): апдейт не обработается, допустимо
+            log.warn("chat={} не обработан: executor уже закрыт", chatId);
+        }
+    }
+
     private void processQueue(Long chatId, ChatState state) {
         Thread.currentThread().setName("task-chat-" + chatId);
         try {
@@ -77,14 +86,5 @@ public class PerChatUpdateHandler implements UpdateHandler {
             return update.getMessage().getChatId();
         }
         return null;
-    }
-
-    private void submitProcessQueue(Long chatId, ChatState state) {
-        try {
-            chatTaskExecutor.submit(() -> processQueue(chatId, state));
-        } catch (RejectedExecutionException e) {
-            // executor закрыт (shutdown): апдейт не обработается, допустимо
-            log.warn("chat={} не обработан: executor уже закрыт", chatId);
-        }
     }
 }
